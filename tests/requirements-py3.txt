@@ -1,5 +1,6 @@
 # Tests requirements
 jmespath
+mitmproxy
 leveldb; sys_platform != "win32"
 pytest
 pytest-cov
