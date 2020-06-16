@@ -128,7 +128,7 @@ class CrawlerRun(object):
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.request_reached, signals.request_reached_downloader)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
-        self.crawler.crawl(start_urls=start_urls)
+        self.crawler.crawl(start_urls=start_urls, base_url=self.geturl("/"))
         self.spider = self.crawler.spider
 
         self.deferred = defer.Deferred()
@@ -175,6 +175,32 @@ class CrawlerRun(object):
         self.signals_catched[sig] = signalargs
 
 
+class StartRequestsNotConsumingSpider(Spider):
+    name = "scrapytest.org"
+    allowed_domains = ["scrapytest.org", "localhost"]
+
+    custom_settings = {
+        "CONCURRENT_REQUESTS": 1,
+        "CLOSESPIDER_PAGECOUNT": 10,
+        "DOWNLOAD_DELAY": 0.3,
+    }
+
+    def start_requests(self):
+        return [Request('%sindex.html?request=%d' % (self.base_url, i),
+                        priority=1,
+                        meta={'index': i})
+                for i in range(1, 11)
+                ]
+
+    def parse(self, response):
+        index = response.meta['index']
+        for new_index in [100 * index, 100 * index + 1]:
+            req = Request('%sindex.html?request=%d' % (self.base_url, new_index),
+                          meta={'index': new_index},
+                          priority=0)
+            yield req
+
+
 class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
@@ -200,6 +226,17 @@ class EngineTest(unittest.TestCase):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
+
+    @defer.inlineCallbacks
+    def test_start_requests_not_consuming(self):
+        # old behavior, not all requests from start_requests are consumed if the request queue is always full
+        self.run = CrawlerRun(StartRequestsNotConsumingSpider)
+        yield self.run.run()
+        urls_visited = set([rp[0].url for rp in self.run.respplug])
+        urls_expected = set([self.run.geturl("/index.html?request=%d" % i) for i in range(1, 2)])
+        urls_unexpected = set([self.run.geturl("/index.html?request=%d" % i) for i in range(8, 11)])
+        assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
+        assert urls_unexpected.isdisjoint(urls_visited), "URLs visited: %s" % list(urls_unexpected & urls_visited)
 
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
