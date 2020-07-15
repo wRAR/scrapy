@@ -38,7 +38,6 @@ from tests.spiders import (
 
 
 class CrawlTestCase(TestCase):
-
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()
@@ -63,22 +62,16 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def _test_delay(self, total, delay, randomize=False):
-        crawl_kwargs = dict(
-            maxlatency=delay * 2,
-            mockserver=self.mockserver,
-            total=total,
-        )
-        tolerance = (1 - (0.6 if randomize else 0.2))
+        crawl_kwargs = dict(maxlatency=delay * 2, mockserver=self.mockserver, total=total,)
+        tolerance = 1 - (0.6 if randomize else 0.2)
 
-        settings = {"DOWNLOAD_DELAY": delay,
-                    'RANDOMIZE_DOWNLOAD_DELAY': randomize}
+        settings = {"DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
         crawler = CrawlerRunner(settings).create_crawler(FollowAllSpider)
         yield crawler.crawl(**crawl_kwargs)
         times = crawler.spider.times
         total_time = times[-1] - times[0]
         average = total_time / (len(times) - 1)
-        self.assertTrue(average > delay * tolerance,
-                        "download delay too small: %s" % average)
+        self.assertTrue(average > delay * tolerance, "download delay too small: %s" % average)
 
         # Ensure that the same test parameters would cause a failure if no
         # download delay is set. Otherwise, it means we are using a combination
@@ -90,8 +83,7 @@ class CrawlTestCase(TestCase):
         times = crawler.spider.times
         total_time = times[-1] - times[0]
         average = total_time / (len(times) - 1)
-        self.assertFalse(average > delay / tolerance,
-                         "test total or delay values are too small")
+        self.assertFalse(average > delay / tolerance, "test total or delay values are too small")
 
     @defer.inlineCallbacks
     def test_timeout_success(self):
@@ -166,8 +158,8 @@ class CrawlTestCase(TestCase):
         crawler = CrawlerRunner(settings).create_crawler(BrokenStartRequestsSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertTrue(
-            crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
-            crawler.spider.seedsseen)
+            crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99), crawler.spider.seedsseen
+        )
 
     @defer.inlineCallbacks
     def test_start_requests_dupes(self):
@@ -184,7 +176,10 @@ class CrawlTestCase(TestCase):
         # Completeness of responses without Content-Length or Transfer-Encoding
         # can not be determined, we treat them as valid but flagged as "partial"
         from urllib.parse import urlencode
-        query = urlencode({'raw': '''\
+
+        query = urlencode(
+            {
+                'raw': '''\
 HTTP/1.1 200 OK
 Server: Apache-Coyote/1.1
 X-Powered-By: Servlet 2.4; JBoss-4.2.3.GA (build: SVNTag=JBoss_4_2_3_GA date=200807181417)/JBossWeb-2.0
@@ -200,7 +195,9 @@ Connection: close
 
 foo body
 with multiples lines
-'''})
+'''
+            }
+        )
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/raw?{0}".format(query)), mockserver=self.mockserver)
@@ -257,6 +254,7 @@ with multiples lines
     @defer.inlineCallbacks
     def test_engine_status(self):
         from scrapy.utils.engine import get_engine_status
+
         est = []
 
         def cb(response):
@@ -292,15 +290,12 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_open_spider_error_on_faulty_pipeline(self):
-        settings = {
-            "ITEM_PIPELINES": {
-                "tests.pipelines.ZeroDivisionErrorPipeline": 300,
-            }
-        }
+        settings = {"ITEM_PIPELINES": {"tests.pipelines.ZeroDivisionErrorPipeline": 300,}}
         crawler = CrawlerRunner(settings).create_crawler(SimpleSpider)
         yield self.assertFailure(
             self.runner.crawl(crawler, self.mockserver.url("/status?n=200"), mockserver=self.mockserver),
-            ZeroDivisionError)
+            ZeroDivisionError,
+        )
         self.assertFalse(crawler.crawling)
 
     @defer.inlineCallbacks
@@ -385,6 +380,7 @@ with multiples lines
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse(self):
         from tests.py36._test_crawl import AsyncDefAsyncioGenSpider
+
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
@@ -402,6 +398,7 @@ with multiples lines
             items.append(item)
 
         from tests.py36._test_crawl import AsyncDefAsyncioGenLoopSpider
+
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenLoopSpider)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         with LogCapture() as log:
@@ -422,6 +419,7 @@ with multiples lines
             items.append(item)
 
         from tests.py36._test_crawl import AsyncDefAsyncioGenComplexSpider
+
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenComplexSpider)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -505,9 +503,5 @@ with multiples lines
         self.assertIsInstance(crawler.spider.meta["failure"], Failure)
         self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
         self.assertIsInstance(crawler.spider.meta["failure"].value.response, Response)
-        self.assertEqual(
-            crawler.spider.meta["failure"].value.response.body,
-            crawler.spider.meta.get("bytes_received"))
-        self.assertLess(
-            len(crawler.spider.meta["failure"].value.response.body),
-            crawler.spider.full_response_length)
+        self.assertEqual(crawler.spider.meta["failure"].value.response.body, crawler.spider.meta.get("bytes_received"))
+        self.assertLess(len(crawler.spider.meta["failure"].value.response.body), crawler.spider.full_response_length)

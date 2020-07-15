@@ -4,8 +4,7 @@ from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
-from scrapy.downloadermiddlewares.robotstxt import (RobotsTxtMiddleware,
-                                                    logger as mw_module_logger)
+from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware, logger as mw_module_logger
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.settings import Settings
@@ -13,7 +12,6 @@ from tests.test_robotstxt_interface import rerp_available, reppy_available
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
-
     def setUp(self):
         self.crawler = mock.MagicMock()
         self.crawler.settings = Settings()
@@ -39,25 +37,31 @@ Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
 Disallow: /wiki/Käyttäjä:
 User-Agent: UnicödeBöt
 Disallow: /some/randome/page.html
-""".encode('utf-8')
+""".encode(
+            'utf-8'
+        )
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
 
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
+
         crawler.engine.download.side_effect = return_response
         return crawler
 
     def test_robotstxt(self):
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
-        return DeferredList([
-            self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
-            self.assertIgnored(Request('http://site.local/admin/main'), middleware),
-            self.assertIgnored(Request('http://site.local/static/'), middleware),
-            self.assertIgnored(Request('http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:'), middleware),
-            self.assertIgnored(Request(u'http://site.local/wiki/Käyttäjä:'), middleware)
-        ], fireOnOneErrback=True)
+        return DeferredList(
+            [
+                self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
+                self.assertIgnored(Request('http://site.local/admin/main'), middleware),
+                self.assertIgnored(Request('http://site.local/static/'), middleware),
+                self.assertIgnored(Request('http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:'), middleware),
+                self.assertIgnored(Request(u'http://site.local/wiki/Käyttäjä:'), middleware),
+            ],
+            fireOnOneErrback=True,
+        )
 
     def test_robotstxt_ready_parser(self):
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
@@ -68,11 +72,14 @@ Disallow: /some/randome/page.html
     def test_robotstxt_meta(self):
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
         meta = {'dont_obey_robotstxt': True}
-        return DeferredList([
-            self.assertNotIgnored(Request('http://site.local/allowed', meta=meta), middleware),
-            self.assertNotIgnored(Request('http://site.local/admin/main', meta=meta), middleware),
-            self.assertNotIgnored(Request('http://site.local/static/', meta=meta), middleware)
-        ], fireOnOneErrback=True)
+        return DeferredList(
+            [
+                self.assertNotIgnored(Request('http://site.local/allowed', meta=meta), middleware),
+                self.assertNotIgnored(Request('http://site.local/admin/main', meta=meta), middleware),
+                self.assertNotIgnored(Request('http://site.local/static/', meta=meta), middleware),
+            ],
+            fireOnOneErrback=True,
+        )
 
     def _get_garbage_crawler(self):
         crawler = self.crawler
@@ -83,18 +90,22 @@ Disallow: /some/randome/page.html
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
+
         crawler.engine.download.side_effect = return_response
         return crawler
 
     def test_robotstxt_garbage(self):
         # garbage response should be discarded, equal 'allow all'
         middleware = RobotsTxtMiddleware(self._get_garbage_crawler())
-        deferred = DeferredList([
-            self.assertNotIgnored(Request('http://site.local'), middleware),
-            self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
-            self.assertNotIgnored(Request('http://site.local/admin/main'), middleware),
-            self.assertNotIgnored(Request('http://site.local/static/'), middleware)
-        ], fireOnOneErrback=True)
+        deferred = DeferredList(
+            [
+                self.assertNotIgnored(Request('http://site.local'), middleware),
+                self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
+                self.assertNotIgnored(Request('http://site.local/admin/main'), middleware),
+                self.assertNotIgnored(Request('http://site.local/static/'), middleware),
+            ],
+            fireOnOneErrback=True,
+        )
         return deferred
 
     def _get_emptybody_crawler(self):
@@ -106,17 +117,21 @@ Disallow: /some/randome/page.html
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
+
         crawler.engine.download.side_effect = return_response
         return crawler
 
     def test_robotstxt_empty_response(self):
         # empty response should equal 'allow all'
         middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
-        return DeferredList([
-            self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
-            self.assertNotIgnored(Request('http://site.local/admin/main'), middleware),
-            self.assertNotIgnored(Request('http://site.local/static/'), middleware)
-        ], fireOnOneErrback=True)
+        return DeferredList(
+            [
+                self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
+                self.assertNotIgnored(Request('http://site.local/admin/main'), middleware),
+                self.assertNotIgnored(Request('http://site.local/static/'), middleware),
+            ],
+            fireOnOneErrback=True,
+        )
 
     def test_robotstxt_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
@@ -126,6 +141,7 @@ Disallow: /some/randome/page.html
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(err))
             return deferred
+
         self.crawler.engine.download.side_effect = return_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
@@ -142,6 +158,7 @@ Disallow: /some/randome/page.html
             deferred = Deferred()
             deferred.errback(failure.Failure(err))
             return deferred
+
         self.crawler.engine.download.side_effect = immediate_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
@@ -154,6 +171,7 @@ Disallow: /some/randome/page.html
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
             return deferred
+
         self.crawler.engine.download.side_effect = ignore_request
 
         middleware = RobotsTxtMiddleware(self.crawler)
@@ -180,8 +198,7 @@ Disallow: /some/randome/page.html
 
     def assertIgnored(self, request, middleware):
         spider = None  # not actually used
-        return self.assertFailure(maybeDeferred(middleware.process_request, request, spider),
-                                  IgnoreRequest)
+        return self.assertFailure(maybeDeferred(middleware.process_request, request, spider), IgnoreRequest)
 
 
 class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):

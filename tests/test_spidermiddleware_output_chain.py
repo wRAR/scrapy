@@ -19,9 +19,7 @@ class LogExceptionMiddleware:
 class RecoverySpider(Spider):
     name = 'RecoverySpider'
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            __name__ + '.RecoveryMiddleware': 10,
-        },
+        'SPIDER_MIDDLEWARES': {__name__ + '.RecoveryMiddleware': 10,},
     }
 
     def start_requests(self):
@@ -86,9 +84,7 @@ class ProcessSpiderInputSpiderWithErrback(ProcessSpiderInputSpiderWithoutErrback
 class GeneratorCallbackSpider(Spider):
     name = 'GeneratorCallbackSpider'
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 10,
-        },
+        'SPIDER_MIDDLEWARES': {__name__ + '.LogExceptionMiddleware': 10,},
     }
 
     def start_requests(self):
@@ -105,9 +101,7 @@ class GeneratorCallbackSpider(Spider):
 class GeneratorCallbackSpiderMiddlewareRightAfterSpider(GeneratorCallbackSpider):
     name = 'GeneratorCallbackSpiderMiddlewareRightAfterSpider'
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 100000,
-        },
+        'SPIDER_MIDDLEWARES': {__name__ + '.LogExceptionMiddleware': 100000,},
     }
 
 
@@ -116,9 +110,7 @@ class GeneratorCallbackSpiderMiddlewareRightAfterSpider(GeneratorCallbackSpider)
 class NotGeneratorCallbackSpider(Spider):
     name = 'NotGeneratorCallbackSpider'
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 10,
-        },
+        'SPIDER_MIDDLEWARES': {__name__ + '.LogExceptionMiddleware': 10,},
     }
 
     def start_requests(self):
@@ -133,9 +125,7 @@ class NotGeneratorCallbackSpider(Spider):
 class NotGeneratorCallbackSpiderMiddlewareRightAfterSpider(NotGeneratorCallbackSpider):
     name = 'NotGeneratorCallbackSpiderMiddlewareRightAfterSpider'
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 100000,
-        },
+        'SPIDER_MIDDLEWARES': {__name__ + '.LogExceptionMiddleware': 100000,},
     }
 
 
@@ -386,23 +376,27 @@ class TestSpiderMiddleware(TestCase):
         self.assertIn("'item_scraped_count': 2", str(log4))
         self.assertIn("GeneratorRecoverMiddleware.process_spider_exception: LookupError caught", str(log4))
         self.assertIn(
-            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught",
-            str(log4))
+            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught", str(log4)
+        )
+        self.assertNotIn("GeneratorFailMiddleware.process_spider_exception: LookupError caught", str(log4))
         self.assertNotIn(
-            "GeneratorFailMiddleware.process_spider_exception: LookupError caught",
-            str(log4))
-        self.assertNotIn(
-            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught",
-            str(log4))
-        item_from_callback = {'processed': [
-            'parse-first-item',
-            'GeneratorFailMiddleware.process_spider_output',
-            'GeneratorDoNothingAfterFailureMiddleware.process_spider_output',
-            'GeneratorRecoverMiddleware.process_spider_output',
-            'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
-        item_recovered = {'processed': [
-            'GeneratorRecoverMiddleware.process_spider_exception',
-            'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
+            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught", str(log4)
+        )
+        item_from_callback = {
+            'processed': [
+                'parse-first-item',
+                'GeneratorFailMiddleware.process_spider_output',
+                'GeneratorDoNothingAfterFailureMiddleware.process_spider_output',
+                'GeneratorRecoverMiddleware.process_spider_output',
+                'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output',
+            ]
+        }
+        item_recovered = {
+            'processed': [
+                'GeneratorRecoverMiddleware.process_spider_exception',
+                'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output',
+            ]
+        }
         self.assertIn(str(item_from_callback), str(log4))
         self.assertIn(str(item_recovered), str(log4))
         self.assertNotIn('parse-second-item', str(log4))
@@ -421,15 +415,18 @@ class TestSpiderMiddleware(TestCase):
         self.assertIn("'item_scraped_count': 1", str(log5))
         self.assertIn("GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught", str(log5))
         self.assertIn(
-            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5))
+            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught", str(log5)
+        )
         self.assertNotIn("GeneratorFailMiddleware.process_spider_exception: ReferenceError caught", str(log5))
         self.assertNotIn(
-            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5))
-        item_recovered = {'processed': [
-            'NotGeneratorRecoverMiddleware.process_spider_exception',
-            'NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
+            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught", str(log5)
+        )
+        item_recovered = {
+            'processed': [
+                'NotGeneratorRecoverMiddleware.process_spider_exception',
+                'NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output',
+            ]
+        }
         self.assertIn(str(item_recovered), str(log5))
         self.assertNotIn('parse-first-item', str(log5))
         self.assertNotIn('parse-second-item', str(log5))

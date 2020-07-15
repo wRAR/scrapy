@@ -60,7 +60,6 @@ def eb1(failure, arg1, arg2):
 
 
 class DeferUtilsTest(unittest.TestCase):
-
     @defer.inlineCallbacks
     def test_process_chain(self):
         x = yield process_chain([cb1, cb2, cb3], 'res', 'v1', 'v2')
@@ -94,7 +93,6 @@ class DeferUtilsTest(unittest.TestCase):
 
 
 class IterErrbackTest(unittest.TestCase):
-
     def test_iter_errback_good(self):
         def itergood():
             for x in range(10):

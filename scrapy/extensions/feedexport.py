@@ -45,7 +45,6 @@ class IFeedStorage(Interface):
 
 @implementer(IFeedStorage)
 class BlockingFeedStorage:
-
     def open(self, spider):
         path = spider.crawler.settings['FEED_TEMPDIR']
         if path and not os.path.isdir(path):
@@ -62,7 +61,6 @@ class BlockingFeedStorage:
 
 @implementer(IFeedStorage)
 class StdoutFeedStorage:
-
     def __init__(self, uri, _stdout=None):
         if not _stdout:
             _stdout = sys.stdout.buffer
@@ -77,7 +75,6 @@ class StdoutFeedStorage:
 
 @implementer(IFeedStorage)
 class FileFeedStorage:
-
     def __init__(self, uri):
         self.path = file_uri_to_path(uri)
 
@@ -92,13 +89,13 @@ class FileFeedStorage:
 
 
 class S3FeedStorage(BlockingFeedStorage):
-
     def __init__(self, uri, access_key=None, secret_key=None, acl=None):
         # BEGIN Backward compatibility for initialising without keys (and
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
         if no_defaults:
             from scrapy.utils.project import get_project_settings
+
             settings = get_project_settings()
             if 'AWS_ACCESS_KEY_ID' in settings or 'AWS_SECRET_ACCESS_KEY' in settings:
                 warnings.warn(
@@ -106,7 +103,7 @@ class S3FeedStorage(BlockingFeedStorage):
                     "without AWS keys is deprecated. Please supply credentials or "
                     "use the `from_crawler()` constructor.",
                     category=ScrapyDeprecationWarning,
-                    stacklevel=2
+                    stacklevel=2,
                 )
                 access_key = settings['AWS_ACCESS_KEY_ID']
                 secret_key = settings['AWS_SECRET_ACCESS_KEY']
@@ -120,12 +117,14 @@ class S3FeedStorage(BlockingFeedStorage):
         self.acl = acl
         if self.is_botocore:
             import botocore.session
+
             session = botocore.session.get_session()
             self.s3_client = session.create_client(
-                's3', aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key)
+                's3', aws_access_key_id=self.access_key, aws_secret_access_key=self.secret_key
+            )
         else:
             import boto
+
             self.connect_s3 = boto.connect_s3
 
     @classmethod
@@ -134,16 +133,14 @@ class S3FeedStorage(BlockingFeedStorage):
             uri=uri,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
-            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None
+            acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
         )
 
     def _store_in_thread(self, file):
         file.seek(0)
         if self.is_botocore:
             kwargs = {'ACL': self.acl} if self.acl else {}
-            self.s3_client.put_object(
-                Bucket=self.bucketname, Key=self.keyname, Body=file,
-                **kwargs)
+            self.s3_client.put_object(Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs)
         else:
             conn = self.connect_s3(self.access_key, self.secret_key)
             bucket = conn.get_bucket(self.bucketname, validate=False)
@@ -154,7 +151,6 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class FTPFeedStorage(BlockingFeedStorage):
-
     def __init__(self, uri, use_active_mode=False):
         u = urlparse(uri)
         self.host = u.hostname
@@ -166,16 +162,17 @@ class FTPFeedStorage(BlockingFeedStorage):
 
     @classmethod
     def from_crawler(cls, crawler, uri):
-        return cls(
-            uri=uri,
-            use_active_mode=crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE')
-        )
+        return cls(uri=uri, use_active_mode=crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE'))
 
     def _store_in_thread(self, file):
         ftp_store_file(
-            path=self.path, file=file, host=self.host,
-            port=self.port, username=self.username,
-            password=self.password, use_active_mode=self.use_active_mode
+            path=self.path,
+            file=file,
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+            use_active_mode=self.use_active_mode,
         )
 
 
@@ -204,7 +201,6 @@ class _FeedSlot:
 
 
 class FeedExporter:
-
     @classmethod
     def from_crawler(cls, crawler):
         exporter = cls(crawler)
@@ -227,7 +223,8 @@ class FeedExporter:
             warnings.warn(
                 'The `FEED_URI` and `FEED_FORMAT` settings have been deprecated in favor of '
                 'the `FEEDS` setting. Please see the `FEEDS` setting docs for more details',
-                category=ScrapyDeprecationWarning, stacklevel=2,
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
             )
             uri = str(self.settings['FEED_URI'])  # handle pathlib.Path objects
             feed = {'format': self.settings.get('FEED_FORMAT', 'jsonlines')}
@@ -275,22 +272,15 @@ class FeedExporter:
                 continue
             slot.finish_exporting()
             logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
-            log_args = {'format': slot.format,
-                        'itemcount': slot.itemcount,
-                        'uri': slot.uri}
+            log_args = {'format': slot.format, 'itemcount': slot.itemcount, 'uri': slot.uri}
             d = defer.maybeDeferred(slot.storage.store, slot.file)
 
             # Use `largs=log_args` to copy log_args into function's scope
             # instead of using `log_args` from the outer scope
-            d.addCallback(
-                lambda _, largs=log_args: logger.info(
-                    logfmt % "Stored", largs, extra={'spider': spider}
-                )
-            )
+            d.addCallback(lambda _, largs=log_args: logger.info(logfmt % "Stored", largs, extra={'spider': spider}))
             d.addErrback(
                 lambda f, largs=log_args: logger.error(
-                    logfmt % "Error storing", largs,
-                    exc_info=failure_to_exc_info(f), extra={'spider': spider}
+                    logfmt % "Error storing", largs, exc_info=failure_to_exc_info(f), extra={'spider': spider}
                 )
             )
             deferred_list.append(d)
@@ -324,17 +314,15 @@ class FeedExporter:
                 self._get_storage(uri)
                 return True
             except NotConfigured as e:
-                logger.error("Disabled feed storage scheme: %(scheme)s. "
-                             "Reason: %(reason)s",
-                             {'scheme': scheme, 'reason': str(e)})
+                logger.error(
+                    "Disabled feed storage scheme: %(scheme)s. " "Reason: %(reason)s",
+                    {'scheme': scheme, 'reason': str(e)},
+                )
         else:
-            logger.error("Unknown feed storage scheme: %(scheme)s",
-                         {'scheme': scheme})
+            logger.error("Unknown feed storage scheme: %(scheme)s", {'scheme': scheme})
 
     def _get_instance(self, objcls, *args, **kwargs):
-        return create_instance(
-            objcls, self.settings, getattr(self, 'crawler', None),
-            *args, **kwargs)
+        return create_instance(objcls, self.settings, getattr(self, 'crawler', None), *args, **kwargs)
 
     def _get_exporter(self, file, format, *args, **kwargs):
         return self._get_instance(self.exporters[format], file, *args, **kwargs)

@@ -55,7 +55,5 @@ def get_temp_key_info(ssl_object):
 
 
 def get_openssl_version():
-    system_openssl = OpenSSL.SSL.SSLeay_version(
-        OpenSSL.SSL.SSLEAY_VERSION
-    ).decode('ascii', errors='replace')
+    system_openssl = OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION).decode('ascii', errors='replace')
     return '{} ({})'.format(OpenSSL.version.__version__, system_openssl)

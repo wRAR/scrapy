@@ -24,7 +24,6 @@ class CustomItem(Item):
 
 
 class LogFormatterTestCase(unittest.TestCase):
-
     def setUp(self):
         self.formatter = LogFormatter()
         self.spider = Spider('default')
@@ -42,17 +41,15 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
         self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
+            logline, "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']"
+        )
 
     def test_flags_in_request(self):
         req = Request("http://www.example.com", flags=['test', 'flag'])
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)")
+        self.assertEqual(logline, "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)")
 
     def test_dropped(self):
         item = {}
@@ -82,10 +79,7 @@ class LogFormatterTestCase(unittest.TestCase):
         response = Response("http://www.example.com", request=request)
         logkws = self.formatter.spider_error(failure, request, response, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(
-            logline,
-            "Spider error processing <GET http://www.example.com> (referer: http://example.org)"
-        )
+        self.assertEqual(logline, "Spider error processing <GET http://www.example.com> (referer: http://example.org)")
 
     def test_download_error_short(self):
         # In practice, the complete traceback is shown by passing the
@@ -119,9 +113,7 @@ class LogFormatterTestCase(unittest.TestCase):
 class LogFormatterSubclass(LogFormatter):
     def crawled(self, request, response, spider):
         kwargs = super(LogFormatterSubclass, self).crawled(request, response, spider)
-        CRAWLEDMSG = (
-            u"Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
-        )
+        CRAWLEDMSG = u"Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
         log_args = kwargs['args']
         log_args['flags'] = str(request.flags)
         return {
@@ -141,9 +133,7 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> (referer: None) []")
+        self.assertEqual(logline, "Crawled (200) <GET http://www.example.com> (referer: None) []")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com", headers={'referer': 'http://example.com'}, flags=['cached'])
@@ -151,17 +141,15 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
         self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
+            logline, "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']"
+        )
 
     def test_flags_in_request(self):
         req = Request("http://www.example.com", flags=['test', 'flag'])
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> (referer: None) ['test', 'flag']")
+        self.assertEqual(logline, "Crawled (200) <GET http://www.example.com> (referer: None) ['test', 'flag']")
 
 
 class SkipMessagesLogFormatter(LogFormatter):
@@ -192,9 +180,7 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
         self.mockserver.__enter__()
         self.base_settings = {
             'LOG_LEVEL': 'DEBUG',
-            'ITEM_PIPELINES': {
-                __name__ + '.DropSomeItemsPipeline': 300,
-            },
+            'ITEM_PIPELINES': {__name__ + '.DropSomeItemsPipeline': 300,},
         }
 
     def tearDown(self):

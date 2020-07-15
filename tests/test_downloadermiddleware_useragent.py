@@ -7,7 +7,6 @@ from scrapy.utils.test import get_crawler
 
 
 class UserAgentMiddlewareTest(TestCase):
-
     def get_spider_and_mw(self, default_useragent):
         crawler = get_crawler(Spider, {'USER_AGENT': default_useragent})
         spider = crawler._create_spider('foo')
@@ -40,8 +39,7 @@ class UserAgentMiddlewareTest(TestCase):
         spider, mw = self.get_spider_and_mw('default_useragent')
         spider.user_agent = 'spider_useragent'
         mw.spider_opened(spider)
-        req = Request('http://scrapytest.org/',
-                      headers={'User-Agent': 'header_useragent'})
+        req = Request('http://scrapytest.org/', headers={'User-Agent': 'header_useragent'})
         assert mw.process_request(req, spider) is None
         self.assertEqual(req.headers['User-Agent'], b'header_useragent')
 

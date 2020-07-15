@@ -31,15 +31,21 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
         try:
             response = robustApply(receiver, signal=signal, sender=sender, *arguments, **named)
             if isinstance(response, Deferred):
-                logger.error("Cannot return deferreds from signal handler: %(receiver)s",
-                             {'receiver': receiver}, extra={'spider': spider})
+                logger.error(
+                    "Cannot return deferreds from signal handler: %(receiver)s",
+                    {'receiver': receiver},
+                    extra={'spider': spider},
+                )
         except dont_log:
             result = Failure()
         except Exception:
             result = Failure()
-            logger.error("Error caught on signal handler: %(receiver)s",
-                         {'receiver': receiver},
-                         exc_info=True, extra={'spider': spider})
+            logger.error(
+                "Error caught on signal handler: %(receiver)s",
+                {'receiver': receiver},
+                exc_info=True,
+                extra={'spider': spider},
+            )
         else:
             result = response
         responses.append((receiver, result))
@@ -51,12 +57,15 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     Returns a deferred that gets fired once all signal handlers deferreds were
     fired.
     """
+
     def logerror(failure, recv):
         if dont_log is None or not isinstance(failure.value, dont_log):
-            logger.error("Error caught on signal handler: %(receiver)s",
-                         {'receiver': recv},
-                         exc_info=failure_to_exc_info(failure),
-                         extra={'spider': spider})
+            logger.error(
+                "Error caught on signal handler: %(receiver)s",
+                {'receiver': recv},
+                exc_info=failure_to_exc_info(failure),
+                extra={'spider': spider},
+            )
         return failure
 
     dont_log = named.pop('dont_log', None)

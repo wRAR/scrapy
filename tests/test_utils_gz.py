@@ -11,7 +11,6 @@ SAMPLEDIR = join(tests_datadir, 'compressed')
 
 
 class GunzipTest(unittest.TestCase):
-
     def test_gunzip_basic(self):
         with open(join(SAMPLEDIR, 'feed-sample1.xml.gz'), 'rb') as f:
             text = gunzip(f.read())

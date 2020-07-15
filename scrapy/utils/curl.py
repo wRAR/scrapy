@@ -27,7 +27,7 @@ safe_to_ignore_arguments = [
     # because the `HttpCompressionMiddleware` is enabled by default
     ['-s', '--silent'],
     ['-v', '--verbose'],
-    ['-#', '--progress-bar']
+    ['-#', '--progress-bar'],
 ]
 
 for argument in safe_to_ignore_arguments:

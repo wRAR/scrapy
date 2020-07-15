@@ -11,7 +11,6 @@ __doctests__ = ['scrapy.utils.datatypes']
 
 
 class CaselessDictTest(unittest.TestCase):
-
     def test_init_dict(self):
         seq = {'red': 1, 'black': 3}
         d = CaselessDict(seq)
@@ -179,7 +178,6 @@ class CaselessDictTest(unittest.TestCase):
 
 
 class SequenceExcludeTest(unittest.TestCase):
-
     def test_list(self):
         seq = [1, 2, 3]
         d = SequenceExclude(seq)
@@ -233,7 +231,6 @@ class SequenceExcludeTest(unittest.TestCase):
 
 
 class LocalCacheTest(unittest.TestCase):
-
     def test_cache_with_limit(self):
         cache = LocalCache(limit=2)
         cache['a'] = 1
@@ -247,7 +244,7 @@ class LocalCacheTest(unittest.TestCase):
         self.assertEqual(cache['c'], 3)
 
     def test_cache_without_limit(self):
-        maximum = 10**4
+        maximum = 10 ** 4
         cache = LocalCache()
         for x in range(maximum):
             cache[str(x)] = x
@@ -258,7 +255,6 @@ class LocalCacheTest(unittest.TestCase):
 
 
 class LocalWeakReferencedCacheTest(unittest.TestCase):
-
     def test_cache_with_limit(self):
         cache = LocalWeakReferencedCache(limit=2)
         r1 = Request('https://example.org')
@@ -295,7 +291,7 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         self.assertEqual(len(cache), 0)
 
     def test_cache_without_limit(self):
-        max = 10**4
+        max = 10 ** 4
         cache = LocalWeakReferencedCache()
         refs = []
         for x in range(max):

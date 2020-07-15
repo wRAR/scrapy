@@ -24,7 +24,7 @@ _collect_string_content = etree.XPath("string()")
 
 def _nons(tag):
     if isinstance(tag, str):
-        if tag[0] == '{' and tag[1:len(XHTML_NAMESPACE) + 1] == XHTML_NAMESPACE:
+        if tag[0] == '{' and tag[1 : len(XHTML_NAMESPACE) + 1] == XHTML_NAMESPACE:
             return tag.split('}')[-1]
     return tag
 
@@ -38,9 +38,7 @@ def _canonicalize_link_url(link):
 
 
 class LxmlParserLinkExtractor:
-    def __init__(
-        self, tag="a", attr="href", process=None, unique=False, strip=True, canonicalized=False
-    ):
+    def __init__(self, tag="a", attr="href", process=None, unique=False, strip=True, canonicalized=False):
         self.scan_tag = tag if callable(tag) else partial(operator.eq, tag)
         self.scan_attr = attr if callable(attr) else partial(operator.eq, attr)
         self.process_attr = process if callable(process) else _identity
@@ -76,8 +74,7 @@ class LxmlParserLinkExtractor:
             url = safe_url_string(url, encoding=response_encoding)
             # to fix relative links after process_value
             url = urljoin(response_url, url)
-            link = Link(url, _collect_string_content(el) or u'',
-                        nofollow=rel_has_nofollow(el.get('rel')))
+            link = Link(url, _collect_string_content(el) or u'', nofollow=rel_has_nofollow(el.get('rel')))
             links.append(link)
         return self._deduplicate_if_needed(links)
 
@@ -99,7 +96,6 @@ class LxmlParserLinkExtractor:
 
 
 class LxmlLinkExtractor(FilteringLinkExtractor):
-
     def __init__(
         self,
         allow=(),
@@ -124,7 +120,7 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             unique=unique,
             process=process_value,
             strip=strip,
-            canonicalized=canonicalize
+            canonicalized=canonicalize,
         )
         super(LxmlLinkExtractor, self).__init__(
             link_extractor=lx,
@@ -150,11 +146,7 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         """
         base_url = get_base_url(response)
         if self.restrict_xpaths:
-            docs = [
-                subdoc
-                for x in self.restrict_xpaths
-                for subdoc in response.xpath(x)
-            ]
+            docs = [subdoc for x in self.restrict_xpaths for subdoc in response.xpath(x)]
         else:
             docs = [response.selector]
         all_links = []

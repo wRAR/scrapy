@@ -12,9 +12,7 @@ from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
 def _with_mkdir(queue_class):
-
     class DirectoriesCreated(queue_class):
-
         def __init__(self, path, *args, **kwargs):
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
@@ -26,9 +24,7 @@ def _with_mkdir(queue_class):
 
 
 def _serializable_queue(queue_class, serialize, deserialize):
-
     class SerializableQueue(queue_class):
-
         def push(self, obj):
             s = serialize(obj)
             super(SerializableQueue, self).push(s)
@@ -42,9 +38,7 @@ def _serializable_queue(queue_class, serialize, deserialize):
 
 
 def _scrapy_serialization_queue(queue_class):
-
     class ScrapyRequestQueue(queue_class):
-
         def __init__(self, crawler, key):
             self.spider = crawler.spider
             super(ScrapyRequestQueue, self).__init__(key)
@@ -70,7 +64,6 @@ def _scrapy_serialization_queue(queue_class):
 
 
 def _scrapy_non_serialization_queue(queue_class):
-
     class ScrapyRequestQueue(queue_class):
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
@@ -88,38 +81,14 @@ def _pickle_serialize(obj):
         raise ValueError(str(e)) from e
 
 
-PickleFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue),
-    _pickle_serialize,
-    pickle.loads
-)
-PickleLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue),
-    _pickle_serialize,
-    pickle.loads
-)
-MarshalFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue),
-    marshal.dumps,
-    marshal.loads
-)
-MarshalLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue),
-    marshal.dumps,
-    marshal.loads
-)
+PickleFifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.FifoDiskQueue), _pickle_serialize, pickle.loads)
+PickleLifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.LifoDiskQueue), _pickle_serialize, pickle.loads)
+MarshalFifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.FifoDiskQueue), marshal.dumps, marshal.loads)
+MarshalLifoDiskQueueNonRequest = _serializable_queue(_with_mkdir(queue.LifoDiskQueue), marshal.dumps, marshal.loads)
 
-PickleFifoDiskQueue = _scrapy_serialization_queue(
-    PickleFifoDiskQueueNonRequest
-)
-PickleLifoDiskQueue = _scrapy_serialization_queue(
-    PickleLifoDiskQueueNonRequest
-)
-MarshalFifoDiskQueue = _scrapy_serialization_queue(
-    MarshalFifoDiskQueueNonRequest
-)
-MarshalLifoDiskQueue = _scrapy_serialization_queue(
-    MarshalLifoDiskQueueNonRequest
-)
+PickleFifoDiskQueue = _scrapy_serialization_queue(PickleFifoDiskQueueNonRequest)
+PickleLifoDiskQueue = _scrapy_serialization_queue(PickleLifoDiskQueueNonRequest)
+MarshalFifoDiskQueue = _scrapy_serialization_queue(MarshalFifoDiskQueueNonRequest)
+MarshalLifoDiskQueue = _scrapy_serialization_queue(MarshalLifoDiskQueueNonRequest)
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)

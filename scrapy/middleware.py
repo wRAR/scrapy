@@ -38,14 +38,17 @@ class MiddlewareManager:
             except NotConfigured as e:
                 if e.args:
                     clsname = clspath.split('.')[-1]
-                    logger.warning("Disabled %(clsname)s: %(eargs)s",
-                                   {'clsname': clsname, 'eargs': e.args[0]},
-                                   extra={'crawler': crawler})
+                    logger.warning(
+                        "Disabled %(clsname)s: %(eargs)s",
+                        {'clsname': clsname, 'eargs': e.args[0]},
+                        extra={'crawler': crawler},
+                    )
 
-        logger.info("Enabled %(componentname)ss:\n%(enabledlist)s",
-                    {'componentname': cls.component_name,
-                     'enabledlist': pprint.pformat(enabled)},
-                    extra={'crawler': crawler})
+        logger.info(
+            "Enabled %(componentname)ss:\n%(enabledlist)s",
+            {'componentname': cls.component_name, 'enabledlist': pprint.pformat(enabled)},
+            extra={'crawler': crawler},
+        )
         return cls(*middlewares)
 
     @classmethod
@@ -65,8 +68,7 @@ class MiddlewareManager:
         return process_chain(self.methods[methodname], obj, *args)
 
     def _process_chain_both(self, cb_methodname, eb_methodname, obj, *args):
-        return process_chain_both(self.methods[cb_methodname],
-                                  self.methods[eb_methodname], obj, *args)
+        return process_chain_both(self.methods[cb_methodname], self.methods[eb_methodname], obj, *args)
 
     def open_spider(self, spider):
         return self._process_parallel('open_spider', spider)

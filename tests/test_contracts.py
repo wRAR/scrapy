@@ -232,9 +232,7 @@ class ContractsManagerTest(unittest.TestCase):
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request)
         self.assertEqual(len(contracts), 2)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, ReturnsContract]))
+        self.assertEqual(frozenset(type(x) for x in contracts), frozenset([UrlContract, ReturnsContract]))
 
         # returns request for valid method
         request = self.conman.from_method(spider.returns_request, self.results)
@@ -251,23 +249,28 @@ class ContractsManagerTest(unittest.TestCase):
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request_cb_kwargs)
         self.assertEqual(len(contracts), 3)
-        self.assertEqual(frozenset(type(x) for x in contracts),
-                         frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]))
+        self.assertEqual(
+            frozenset(type(x) for x in contracts),
+            frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]),
+        )
 
         contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs)
         self.assertEqual(len(contracts), 3)
-        self.assertEqual(frozenset(type(x) for x in contracts),
-                         frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]))
+        self.assertEqual(
+            frozenset(type(x) for x in contracts),
+            frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]),
+        )
 
         contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs_error_unexpected_keyword)
         self.assertEqual(len(contracts), 3)
-        self.assertEqual(frozenset(type(x) for x in contracts),
-                         frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]))
+        self.assertEqual(
+            frozenset(type(x) for x in contracts),
+            frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]),
+        )
 
         contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs_error_missing_argument)
         self.assertEqual(len(contracts), 2)
-        self.assertEqual(frozenset(type(x) for x in contracts),
-                         frozenset([UrlContract, ReturnsContract]))
+        self.assertEqual(frozenset(type(x) for x in contracts), frozenset([UrlContract, ReturnsContract]))
 
         # returns_request
         request = self.conman.from_method(spider.returns_request_cb_kwargs, self.results)
@@ -373,7 +376,6 @@ class ContractsManagerTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_same_url(self):
-
         class TestSameUrlSpider(Spider):
             name = 'test_same_url'
 

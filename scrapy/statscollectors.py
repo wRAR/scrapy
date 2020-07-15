@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class StatsCollector:
-
     def __init__(self, crawler):
         self._dump = crawler.settings.getbool('STATS_DUMP')
         self._stats = {}
@@ -43,8 +42,7 @@ class StatsCollector:
 
     def close_spider(self, spider, reason):
         if self._dump:
-            logger.info("Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
-                        extra={'spider': spider})
+            logger.info("Dumping Scrapy stats:\n" + pprint.pformat(self._stats), extra={'spider': spider})
         self._persist_stats(self._stats, spider)
 
     def _persist_stats(self, stats, spider):
@@ -52,7 +50,6 @@ class StatsCollector:
 
 
 class MemoryStatsCollector(StatsCollector):
-
     def __init__(self, crawler):
         super(MemoryStatsCollector, self).__init__(crawler)
         self.spider_stats = {}
@@ -62,7 +59,6 @@ class MemoryStatsCollector(StatsCollector):
 
 
 class DummyStatsCollector(StatsCollector):
-
     def get_value(self, key, default=None, spider=None):
         return default
 

@@ -73,12 +73,9 @@ class CachingHostnameResolver:
     def install_on_reactor(self):
         self.reactor.installNameResolver(self)
 
-    def resolveHostName(self, resolutionReceiver, hostName, portNumber=0,
-                        addressTypes=None, transportSemantics='TCP'):
-
+    def resolveHostName(self, resolutionReceiver, hostName, portNumber=0, addressTypes=None, transportSemantics='TCP'):
         @provider(IResolutionReceiver)
         class CachingResolutionReceiver(resolutionReceiver):
-
             def resolutionBegan(self, resolution):
                 super(CachingResolutionReceiver, self).resolutionBegan(resolution)
                 self.resolution = resolution
@@ -97,9 +94,5 @@ class CachingHostnameResolver:
             return dnscache[hostName]
         except KeyError:
             return self.original_resolver.resolveHostName(
-                CachingResolutionReceiver(),
-                hostName,
-                portNumber,
-                addressTypes,
-                transportSemantics
+                CachingResolutionReceiver(), hostName, portNumber, addressTypes, transportSemantics
             )

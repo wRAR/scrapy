@@ -17,7 +17,6 @@ except ImportError:
 
 
 class JsonEncoderTestCase(unittest.TestCase):
-
     def setUp(self):
         self.encoder = ScrapyJSONEncoder(sort_keys=True)
 
@@ -35,11 +34,17 @@ class JsonEncoderTestCase(unittest.TestCase):
         dt_set = {dt}
         dt_sets = [dts]
 
-        for input, output in [('foo', 'foo'), (d, ds), (t, ts), (dt, dts),
-                              (dec, decs), (['foo', d], ['foo', ds]), (s, ss),
-                              (dt_set, dt_sets)]:
-            self.assertEqual(self.encoder.encode(input),
-                             json.dumps(output, sort_keys=True))
+        for input, output in [
+            ('foo', 'foo'),
+            (d, ds),
+            (t, ts),
+            (dt, dts),
+            (dec, decs),
+            (['foo', d], ['foo', ds]),
+            (s, ss),
+            (dt_set, dt_sets),
+        ]:
+            self.assertEqual(self.encoder.encode(input), json.dumps(output, sort_keys=True))
 
     def test_encode_deferred(self):
         self.assertIn('Deferred', self.encoder.encode(defer.Deferred()))
@@ -58,16 +63,10 @@ class JsonEncoderTestCase(unittest.TestCase):
 
     @unittest.skipIf(not make_dataclass, "No dataclass support")
     def test_encode_dataclass_item(self):
-        TestDataClass = make_dataclass(
-            "TestDataClass",
-            [("name", str), ("url", str), ("price", int)],
-        )
+        TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)],)
         item = TestDataClass(name="Product", url="http://product.org", price=1)
         encoded = self.encoder.encode(item)
-        self.assertEqual(
-            encoded,
-            '{"name": "Product", "price": 1, "url": "http://product.org"}'
-        )
+        self.assertEqual(encoded, '{"name": "Product", "price": 1, "url": "http://product.org"}')
 
     def test_encode_attrs_item(self):
         @attr.s
@@ -78,7 +77,4 @@ class JsonEncoderTestCase(unittest.TestCase):
 
         item = AttrsItem(name="Product", url="http://product.org", price=1)
         encoded = self.encoder.encode(item)
-        self.assertEqual(
-            encoded,
-            '{"name": "Product", "price": 1, "url": "http://product.org"}'
-        )
+        self.assertEqual(encoded, '{"name": "Product", "price": 1, "url": "http://product.org"}')

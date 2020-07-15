@@ -46,7 +46,7 @@ def load_object(path):
     except ValueError:
         raise ValueError("Error loading object '%s': not a full path" % path)
 
-    module, name = path[:dot], path[dot + 1:]
+    module, name = path[:dot], path[dot + 1 :]
     mod = import_module(module)
 
     try:
@@ -91,16 +91,15 @@ def extract_regex(regex, text, encoding='utf-8'):
         regex = re.compile(regex, re.UNICODE)
 
     try:
-        strings = [regex.search(text).group('extract')]   # named group
+        strings = [regex.search(text).group('extract')]  # named group
     except Exception:
-        strings = regex.findall(text)    # full regex or numbered groups
+        strings = regex.findall(text)  # full regex or numbered groups
     strings = flatten(strings)
 
     if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
-        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
-                for s in strings]
+        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
 
 def md5sum(file):
@@ -214,6 +213,8 @@ def warn_on_generator_with_return_value(spider, callable):
             'The "{}.{}" method is a generator and includes a "return" statement with a '
             'value different than None. This could lead to unexpected behaviour. Please see '
             'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
-            'for details about the semantics of the "return" statement within generators'
-            .format(spider.__class__.__name__, callable.__name__), stacklevel=2,
+            'for details about the semantics of the "return" statement within generators'.format(
+                spider.__class__.__name__, callable.__name__
+            ),
+            stacklevel=2,
         )

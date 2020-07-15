@@ -80,10 +80,11 @@ class Headers(CaselessDict):
         and unicode values. Multiple values are joined with ','.
         """
         return CaselessDict(
-            (to_unicode(key, encoding=self.encoding),
-             to_unicode(b','.join(value), encoding=self.encoding))
-            for key, value in self.items())
+            (to_unicode(key, encoding=self.encoding), to_unicode(b','.join(value), encoding=self.encoding))
+            for key, value in self.items()
+        )
 
     def __copy__(self):
         return self.__class__(self)
+
     copy = __copy__

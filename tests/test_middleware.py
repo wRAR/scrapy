@@ -6,7 +6,6 @@ from scrapy.middleware import MiddlewareManager
 
 
 class M1:
-
     def open_spider(self, spider):
         pass
 
@@ -18,7 +17,6 @@ class M1:
 
 
 class M2:
-
     def open_spider(self, spider):
         pass
 
@@ -29,13 +27,11 @@ class M2:
 
 
 class M3:
-
     def process(self, response, request, spider):
         pass
 
 
 class MOff:
-
     def open_spider(self, spider):
         pass
 
@@ -47,7 +43,6 @@ class MOff:
 
 
 class TestMiddlewareManager(MiddlewareManager):
-
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
         return ['tests.test_middleware.%s' % x for x in ['M1', 'MOff', 'M3']]
@@ -59,7 +54,6 @@ class TestMiddlewareManager(MiddlewareManager):
 
 
 class MiddlewareManagerTest(unittest.TestCase):
-
     def test_init(self):
         m1, m2, m3 = M1(), M2(), M3()
         mwman = TestMiddlewareManager(m1, m2, m3)
@@ -69,15 +63,9 @@ class MiddlewareManagerTest(unittest.TestCase):
 
     def test_methods(self):
         mwman = TestMiddlewareManager(M1(), M2(), M3())
-        self.assertEqual(
-            [x.__self__.__class__ for x in mwman.methods['open_spider']],
-            [M1, M2])
-        self.assertEqual(
-            [x.__self__.__class__ for x in mwman.methods['close_spider']],
-            [M2, M1])
-        self.assertEqual(
-            [x.__self__.__class__ for x in mwman.methods['process']],
-            [M1, M3])
+        self.assertEqual([x.__self__.__class__ for x in mwman.methods['open_spider']], [M1, M2])
+        self.assertEqual([x.__self__.__class__ for x in mwman.methods['close_spider']], [M2, M1])
+        self.assertEqual([x.__self__.__class__ for x in mwman.methods['process']], [M1, M3])
 
     def test_enabled(self):
         m1, m2, m3 = M1(), M2(), M3()

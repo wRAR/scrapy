@@ -12,8 +12,7 @@ from typing import Generator
 from urllib.parse import urljoin
 
 import parsel
-from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
-                            http_content_type_encoding, resolve_encoding)
+from w3lib.encoding import html_body_declared_encoding, html_to_unicode, http_content_type_encoding, resolve_encoding
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -47,8 +46,7 @@ class TextResponse(Response):
         self._body = b''  # used by encoding detection
         if isinstance(body, str):
             if self._encoding is None:
-                raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                                type(self).__name__)
+                raise TypeError('Cannot convert unicode body - %s has no encoding' % type(self).__name__)
             self._body = body.encode(self._encoding)
         else:
             super(TextResponse, self)._set_body(body)
@@ -62,17 +60,15 @@ class TextResponse(Response):
         return self._declared_encoding() or self._body_inferred_encoding()
 
     def _declared_encoding(self):
-        return (
-            self._encoding
-            or self._headers_encoding()
-            or self._body_declared_encoding()
-        )
+        return self._encoding or self._headers_encoding() or self._body_declared_encoding()
 
     def body_as_unicode(self):
         """Return body as unicode"""
-        warnings.warn('Response.body_as_unicode() is deprecated, '
-                      'please use Response.text instead.',
-                      ScrapyDeprecationWarning, stacklevel=2)
+        warnings.warn(
+            'Response.body_as_unicode() is deprecated, ' 'please use Response.text instead.',
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return self.text
 
     def json(self):
@@ -109,9 +105,9 @@ class TextResponse(Response):
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
             content_type = to_unicode(self.headers.get(b'Content-Type', b''))
-            benc, ubody = html_to_unicode(content_type, self.body,
-                                          auto_detect_fun=self._auto_detect_fun,
-                                          default_encoding=self._DEFAULT_ENCODING)
+            benc, ubody = html_to_unicode(
+                content_type, self.body, auto_detect_fun=self._auto_detect_fun, default_encoding=self._DEFAULT_ENCODING
+            )
             self._cached_benc = benc
             self._cached_ubody = ubody
         return self._cached_benc
@@ -131,6 +127,7 @@ class TextResponse(Response):
     @property
     def selector(self):
         from scrapy.selector import Selector
+
         if self._cached_selector is None:
             self._cached_selector = Selector(self)
         return self._cached_selector
@@ -141,9 +138,22 @@ class TextResponse(Response):
     def css(self, query):
         return self.selector.css(query)
 
-    def follow(self, url, callback=None, method='GET', headers=None, body=None,
-               cookies=None, meta=None, encoding=None, priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
+    def follow(
+        self,
+        url,
+        callback=None,
+        method='GET',
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding=None,
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+    ):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -182,10 +192,24 @@ class TextResponse(Response):
             flags=flags,
         )
 
-    def follow_all(self, urls=None, callback=None, method='GET', headers=None, body=None,
-                   cookies=None, meta=None, encoding=None, priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None, flags=None,
-                   css=None, xpath=None):
+    def follow_all(
+        self,
+        urls=None,
+        callback=None,
+        method='GET',
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding=None,
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+        css=None,
+        xpath=None,
+    ):
         # type: (...) -> Generator[Request, None, None]
         """
         A generator that produces :class:`~.Request` instances to follow all
@@ -212,9 +236,7 @@ class TextResponse(Response):
         """
         arguments = [x for x in (urls, css, xpath) if x is not None]
         if len(arguments) != 1:
-            raise ValueError(
-                "Please supply exactly one of the following arguments: urls, css, xpath"
-            )
+            raise ValueError("Please supply exactly one of the following arguments: urls, css, xpath")
         if not urls:
             if css:
                 urls = self.css(css)
@@ -257,10 +279,8 @@ def _url_from_selector(sel):
     if not hasattr(sel.root, 'tag'):
         raise _InvalidSelector("Unsupported selector: %s" % sel)
     if sel.root.tag not in ('a', 'link'):
-        raise _InvalidSelector("Only <a> and <link> elements are supported; got <%s>" %
-                               sel.root.tag)
+        raise _InvalidSelector("Only <a> and <link> elements are supported; got <%s>" % sel.root.tag)
     href = sel.root.get('href')
     if href is None:
-        raise _InvalidSelector("<%s> element has no href attribute: %s" %
-                               (sel.root.tag, sel))
+        raise _InvalidSelector("<%s> element has no href attribute: %s" % (sel.root.tag, sel))
     return strip_html5_whitespace(href)

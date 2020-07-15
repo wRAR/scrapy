@@ -10,6 +10,7 @@ ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
 
 try:
     import brotli
+
     ACCEPTED_ENCODINGS.append(b'br')
 except ImportError:
     pass
@@ -18,6 +19,7 @@ except ImportError:
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
+
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
@@ -25,8 +27,7 @@ class HttpCompressionMiddleware:
         return cls()
 
     def process_request(self, request, spider):
-        request.headers.setdefault('Accept-Encoding',
-                                   b", ".join(ACCEPTED_ENCODINGS))
+        request.headers.setdefault('Accept-Encoding', b", ".join(ACCEPTED_ENCODINGS))
 
     def process_response(self, request, response, spider):
 
@@ -37,9 +38,7 @@ class HttpCompressionMiddleware:
             if content_encoding:
                 encoding = content_encoding.pop()
                 decoded_body = self._decode(response.body, encoding.lower())
-                respcls = responsetypes.from_args(
-                    headers=response.headers, url=response.url, body=decoded_body
-                )
+                respcls = responsetypes.from_args(headers=response.headers, url=response.url, body=decoded_body)
                 kwargs = dict(cls=respcls, body=decoded_body)
                 if issubclass(respcls, TextResponse):
                     # force recalculating the encoding until we make sure the

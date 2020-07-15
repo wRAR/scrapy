@@ -59,10 +59,7 @@ class ReturnsContract(Contract):
         super(ReturnsContract, self).__init__(*args, **kwargs)
 
         if len(self.args) not in [1, 2, 3]:
-            raise ValueError(
-                "Incorrect argument quantity: expected 1, 2 or 3, got %i"
-                % len(self.args)
-            )
+            raise ValueError("Incorrect argument quantity: expected 1, 2 or 3, got %i" % len(self.args))
         self.obj_name = self.args[0] or None
         self.obj_type_verifier = self.object_type_verifiers[self.obj_name]
 
@@ -82,7 +79,7 @@ class ReturnsContract(Contract):
             if self.obj_type_verifier(x):
                 occurrences += 1
 
-        assertion = (self.min_bound <= occurrences <= self.max_bound)
+        assertion = self.min_bound <= occurrences <= self.max_bound
 
         if not assertion:
             if self.min_bound == self.max_bound:
@@ -90,8 +87,7 @@ class ReturnsContract(Contract):
             else:
                 expected = '%s..%s' % (self.min_bound, self.max_bound)
 
-            raise ContractFail("Returned %s %s, expected %s" %
-                               (occurrences, self.obj_name, expected))
+            raise ContractFail("Returned %s %s, expected %s" % (occurrences, self.obj_name, expected))
 
 
 class ScrapesContract(Contract):

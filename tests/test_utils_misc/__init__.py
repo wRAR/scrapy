@@ -11,7 +11,6 @@ __doctests__ = ['scrapy.utils.misc']
 
 
 class UtilsMiscTestCase(unittest.TestCase):
-
     def test_load_object(self):
         obj = load_object('scrapy.utils.misc.load_object')
         assert obj is load_object
@@ -48,18 +47,12 @@ class UtilsMiscTestCase(unittest.TestCase):
         sys.path.append(egg)
         try:
             mods = walk_modules('testegg')
-            expected = [
-                'testegg.spiders',
-                'testegg.spiders.a',
-                'testegg.spiders.b',
-                'testegg'
-            ]
+            expected = ['testegg.spiders', 'testegg.spiders.a', 'testegg.spiders.b', 'testegg']
             self.assertEqual({m.__name__ for m in mods}, set(expected))
         finally:
             sys.path.remove(egg)
 
     def test_arg_to_iter(self):
-
         class TestItem(Item):
             name = Field()
 
@@ -80,7 +73,7 @@ class UtilsMiscTestCase(unittest.TestCase):
     def test_create_instance(self):
         settings = mock.MagicMock()
         crawler = mock.MagicMock(spec_set=['settings'])
-        args = (True, 100.)
+        args = (True, 100.0)
         kwargs = {'key': 'val'}
 
         def _test_with_settings(mock, settings):
@@ -88,8 +81,7 @@ class UtilsMiscTestCase(unittest.TestCase):
             if hasattr(mock, 'from_crawler'):
                 self.assertEqual(mock.from_crawler.call_count, 0)
             if hasattr(mock, 'from_settings'):
-                mock.from_settings.assert_called_once_with(settings, *args,
-                                                           **kwargs)
+                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
                 self.assertEqual(mock.call_count, 0)
             else:
                 mock.assert_called_once_with(*args, **kwargs)
@@ -97,14 +89,12 @@ class UtilsMiscTestCase(unittest.TestCase):
         def _test_with_crawler(mock, settings, crawler):
             create_instance(mock, settings, crawler, *args, **kwargs)
             if hasattr(mock, 'from_crawler'):
-                mock.from_crawler.assert_called_once_with(crawler, *args,
-                                                          **kwargs)
+                mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
                 if hasattr(mock, 'from_settings'):
                     self.assertEqual(mock.from_settings.call_count, 0)
                 self.assertEqual(mock.call_count, 0)
             elif hasattr(mock, 'from_settings'):
-                mock.from_settings.assert_called_once_with(settings, *args,
-                                                           **kwargs)
+                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
                 self.assertEqual(mock.call_count, 0)
             else:
                 mock.assert_called_once_with(*args, **kwargs)
@@ -129,8 +119,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         # Check adoption of crawler settings
         m = mock.MagicMock(spec_set=['__qualname__', 'from_settings'])
         create_instance(m, None, crawler, *args, **kwargs)
-        m.from_settings.assert_called_once_with(crawler.settings, *args,
-                                                **kwargs)
+        m.from_settings.assert_called_once_with(crawler.settings, *args, **kwargs)
 
         with self.assertRaises(ValueError):
             create_instance(m, None, None)

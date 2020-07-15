@@ -12,7 +12,6 @@ from scrapy.utils.test import get_from_asyncio_queue
 
 
 class SendCatchLogTest(unittest.TestCase):
-
     @defer.inlineCallbacks
     def test_send_catch_log(self):
         test_signal = object()
@@ -22,8 +21,7 @@ class SendCatchLogTest(unittest.TestCase):
         dispatcher.connect(self.ok_handler, signal=test_signal)
         with LogCapture() as log:
             result = yield defer.maybeDeferred(
-                self._get_result, test_signal, arg='test',
-                handlers_called=handlers_called
+                self._get_result, test_signal, arg='test', handlers_called=handlers_called
             )
 
         assert self.error_handler in handlers_called
@@ -53,13 +51,11 @@ class SendCatchLogTest(unittest.TestCase):
 
 
 class SendCatchLogDeferredTest(SendCatchLogTest):
-
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
 
 
 class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
-
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
         assert arg == 'test'
@@ -69,7 +65,6 @@ class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
 
 
 class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
-
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
         assert arg == 'test'
@@ -79,7 +74,6 @@ class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
 
 @mark.only_asyncio()
 class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
-
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
         assert arg == 'test'
@@ -88,7 +82,6 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
 
 
 class SendCatchLogTest2(unittest.TestCase):
-
     def test_error_logged_if_deferred_not_supported(self):
         def test_handler():
             return defer.Deferred()

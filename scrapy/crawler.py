@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 
 class Crawler:
-
     def __init__(self, spidercls, settings=None):
         if isinstance(spidercls, Spider):
             raise ValueError('The spidercls argument must be a class, not an object')
@@ -56,8 +55,7 @@ class Crawler:
         logging.root.addHandler(handler)
 
         d = dict(overridden_settings(self.settings))
-        logger.info("Overridden settings:\n%(settings)s",
-                    {'settings': pprint.pformat(d)})
+        logger.info("Overridden settings:\n%(settings)s", {'settings': pprint.pformat(d)})
 
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
@@ -124,8 +122,7 @@ class CrawlerRunner:
 
     crawlers = property(
         lambda self: self._crawlers,
-        doc="Set of :class:`crawlers <scrapy.crawler.Crawler>` started by "
-            ":meth:`crawl` and managed by this class."
+        doc="Set of :class:`crawlers <scrapy.crawler.Crawler>` started by " ":meth:`crawl` and managed by this class.",
     )
 
     @staticmethod
@@ -141,7 +138,8 @@ class CrawlerRunner:
                 'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
                 'not fully implement scrapy.interfaces.ISpiderLoader interface. '
                 'Please add all missing methods to avoid unexpected runtime errors.',
-                category=ScrapyDeprecationWarning, stacklevel=2
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
             )
         return loader_cls.from_settings(settings.frozencopy())
 
@@ -157,9 +155,11 @@ class CrawlerRunner:
 
     @property
     def spiders(self):
-        warnings.warn("CrawlerRunner.spiders attribute is renamed to "
-                      "CrawlerRunner.spider_loader.",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
+        warnings.warn(
+            "CrawlerRunner.spiders attribute is renamed to " "CrawlerRunner.spider_loader.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return self.spider_loader
 
     def crawl(self, crawler_or_spidercls, *args, **kwargs):
@@ -187,7 +187,8 @@ class CrawlerRunner:
         if isinstance(crawler_or_spidercls, Spider):
             raise ValueError(
                 'The crawler_or_spidercls argument cannot be a spider object, '
-                'it must be a spider class (or a Crawler object)')
+                'it must be a spider class (or a Crawler object)'
+            )
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
@@ -218,7 +219,8 @@ class CrawlerRunner:
         if isinstance(crawler_or_spidercls, Spider):
             raise ValueError(
                 'The crawler_or_spidercls argument cannot be a spider object, '
-                'it must be a spider class (or a Crawler object)')
+                'it must be a spider class (or a Crawler object)'
+            )
         if isinstance(crawler_or_spidercls, Crawler):
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
@@ -284,18 +286,18 @@ class CrawlerProcess(CrawlerRunner):
 
     def _signal_shutdown(self, signum, _):
         from twisted.internet import reactor
+
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
-        logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
-                    {'signame': signame})
+        logger.info("Received %(signame)s, shutting down gracefully. Send again to force ", {'signame': signame})
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum, _):
         from twisted.internet import reactor
+
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
-        logger.info('Received %(signame)s twice, forcing unclean shutdown',
-                    {'signame': signame})
+        logger.info('Received %(signame)s twice, forcing unclean shutdown', {'signame': signame})
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True):
@@ -311,6 +313,7 @@ class CrawlerProcess(CrawlerRunner):
             crawlers have finished
         """
         from twisted.internet import reactor
+
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired
@@ -333,6 +336,7 @@ class CrawlerProcess(CrawlerRunner):
 
     def _stop_reactor(self, _=None):
         from twisted.internet import reactor
+
         try:
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage

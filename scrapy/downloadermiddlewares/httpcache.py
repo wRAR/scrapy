@@ -19,10 +19,18 @@ from scrapy.utils.misc import load_object
 
 class HttpCacheMiddleware:
 
-    DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
-                           ConnectionRefusedError, ConnectionDone, ConnectError,
-                           ConnectionLost, TCPTimedOutError, ResponseFailed,
-                           IOError)
+    DOWNLOAD_EXCEPTIONS = (
+        defer.TimeoutError,
+        TimeoutError,
+        DNSLookupError,
+        ConnectionRefusedError,
+        ConnectionDone,
+        ConnectError,
+        ConnectionLost,
+        TCPTimedOutError,
+        ResponseFailed,
+        IOError,
+    )
 
     def __init__(self, settings, stats):
         if not settings.getbool('HTTPCACHE_ENABLED'):

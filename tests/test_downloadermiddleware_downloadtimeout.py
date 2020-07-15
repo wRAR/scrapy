@@ -7,7 +7,6 @@ from scrapy.utils.test import get_crawler
 
 
 class DownloadTimeoutMiddlewareTest(unittest.TestCase):
-
     def get_request_spider_mw(self, settings=None):
         crawler = get_crawler(Spider, settings)
         spider = crawler._create_spider('foo')

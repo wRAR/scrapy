@@ -45,8 +45,9 @@ class SitemapSpider(Spider):
         else:
             body = self._get_sitemap_body(response)
             if body is None:
-                logger.warning("Ignoring invalid sitemap: %(response)s",
-                               {'response': response}, extra={'spider': self})
+                logger.warning(
+                    "Ignoring invalid sitemap: %(response)s", {'response': response}, extra={'spider': self}
+                )
                 return
 
             s = Sitemap(body)

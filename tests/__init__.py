@@ -18,11 +18,9 @@ os.environ['ftp_proxy'] = ''
 _sourceroot = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if 'COV_CORE_CONFIG' in os.environ:
     os.environ['COVERAGE_FILE'] = os.path.join(_sourceroot, '.coverage')
-    os.environ['COV_CORE_CONFIG'] = os.path.join(_sourceroot,
-                                                 os.environ['COV_CORE_CONFIG'])
+    os.environ['COV_CORE_CONFIG'] = os.path.join(_sourceroot, os.environ['COV_CORE_CONFIG'])
 
-tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                             'sample_data')
+tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data')
 
 
 def get_testdata(*paths):

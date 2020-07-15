@@ -12,6 +12,7 @@ class ProcessTest:
 
     def execute(self, args, check_code=True, settings=None):
         from twisted.internet import reactor
+
         env = os.environ.copy()
         if settings is not None:
             env['SCRAPY_SETTINGS_MODULE'] = settings
@@ -32,7 +33,6 @@ class ProcessTest:
 
 
 class TestProcessProtocol(protocol.ProcessProtocol):
-
     def __init__(self):
         self.deferred = defer.Deferred()
         self.out = b''

@@ -14,6 +14,7 @@ from PIL import Image
 from scrapy.exceptions import DropItem
 from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
+
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
@@ -45,41 +46,24 @@ class ImagesPipeline(FilesPipeline):
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
-        super(ImagesPipeline, self).__init__(store_uri, settings=settings,
-                                             download_func=download_func)
+        super(ImagesPipeline, self).__init__(store_uri, settings=settings, download_func=download_func)
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        resolve = functools.partial(self._key_for_pipe,
-                                    base_class_name="ImagesPipeline",
-                                    settings=settings)
-        self.expires = settings.getint(
-            resolve("IMAGES_EXPIRES"), self.EXPIRES
-        )
+        resolve = functools.partial(self._key_for_pipe, base_class_name="ImagesPipeline", settings=settings)
+        self.expires = settings.getint(resolve("IMAGES_EXPIRES"), self.EXPIRES)
 
         if not hasattr(self, "IMAGES_RESULT_FIELD"):
             self.IMAGES_RESULT_FIELD = self.DEFAULT_IMAGES_RESULT_FIELD
         if not hasattr(self, "IMAGES_URLS_FIELD"):
             self.IMAGES_URLS_FIELD = self.DEFAULT_IMAGES_URLS_FIELD
 
-        self.images_urls_field = settings.get(
-            resolve('IMAGES_URLS_FIELD'),
-            self.IMAGES_URLS_FIELD
-        )
-        self.images_result_field = settings.get(
-            resolve('IMAGES_RESULT_FIELD'),
-            self.IMAGES_RESULT_FIELD
-        )
-        self.min_width = settings.getint(
-            resolve('IMAGES_MIN_WIDTH'), self.MIN_WIDTH
-        )
-        self.min_height = settings.getint(
-            resolve('IMAGES_MIN_HEIGHT'), self.MIN_HEIGHT
-        )
-        self.thumbs = settings.get(
-            resolve('IMAGES_THUMBS'), self.THUMBS
-        )
+        self.images_urls_field = settings.get(resolve('IMAGES_URLS_FIELD'), self.IMAGES_URLS_FIELD)
+        self.images_result_field = settings.get(resolve('IMAGES_RESULT_FIELD'), self.IMAGES_RESULT_FIELD)
+        self.min_width = settings.getint(resolve('IMAGES_MIN_WIDTH'), self.MIN_WIDTH)
+        self.min_height = settings.getint(resolve('IMAGES_MIN_HEIGHT'), self.MIN_HEIGHT)
+        self.thumbs = settings.get(resolve('IMAGES_THUMBS'), self.THUMBS)
 
     @classmethod
     def from_settings(cls, settings):
@@ -115,9 +99,8 @@ class ImagesPipeline(FilesPipeline):
                 checksum = md5sum(buf)
             width, height = image.size
             self.store.persist_file(
-                path, buf, info,
-                meta={'width': width, 'height': height},
-                headers={'Content-Type': 'image/jpeg'})
+                path, buf, info, meta={'width': width, 'height': height}, headers={'Content-Type': 'image/jpeg'}
+            )
         return checksum
 
     def get_images(self, response, request, info):
@@ -126,8 +109,7 @@ class ImagesPipeline(FilesPipeline):
 
         width, height = orig_image.size
         if width < self.min_width or height < self.min_height:
-            raise ImageException("Image too small (%dx%d < %dx%d)" %
-                                 (width, height, self.min_width, self.min_height))
+            raise ImageException("Image too small (%dx%d < %dx%d)" % (width, height, self.min_width, self.min_height))
 
         image, buf = self.convert_image(orig_image)
         yield path, image, buf

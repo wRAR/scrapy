@@ -11,7 +11,6 @@ class TestSpider(Spider):
 
 
 class HttpAuthMiddlewareTest(unittest.TestCase):
-
     def setUp(self):
         self.mw = HttpAuthMiddleware()
         self.spider = TestSpider('foo')
@@ -26,7 +25,6 @@ class HttpAuthMiddlewareTest(unittest.TestCase):
         self.assertEqual(req.headers['Authorization'], b'Basic Zm9vOmJhcg==')
 
     def test_auth_already_set(self):
-        req = Request('http://scrapytest.org/',
-                      headers=dict(Authorization='Digest 123'))
+        req = Request('http://scrapytest.org/', headers=dict(Authorization='Digest 123'))
         assert self.mw.process_request(req, self.spider) is None
         self.assertEqual(req.headers['Authorization'], b'Digest 123')

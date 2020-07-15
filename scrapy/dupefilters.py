@@ -6,7 +6,6 @@ from scrapy.utils.request import referer_str, request_fingerprint
 
 
 class BaseDupeFilter:
-
     @classmethod
     def from_settings(cls, settings):
         return cls()
@@ -64,9 +63,11 @@ class RFPDupeFilter(BaseDupeFilter):
             args = {'request': request, 'referer': referer_str(request)}
             self.logger.debug(msg, args, extra={'spider': spider})
         elif self.logdupes:
-            msg = ("Filtered duplicate request: %(request)s"
-                   " - no more duplicates will be shown"
-                   " (see DUPEFILTER_DEBUG to show all duplicates)")
+            msg = (
+                "Filtered duplicate request: %(request)s"
+                " - no more duplicates will be shown"
+                " (see DUPEFILTER_DEBUG to show all duplicates)"
+            )
             self.logger.debug(msg, {'request': request}, extra={'spider': spider})
             self.logdupes = False
 

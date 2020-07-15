@@ -25,12 +25,10 @@ class _BaseTest(unittest.TestCase):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('example.com')
         self.tmpdir = tempfile.mkdtemp()
-        self.request = Request('http://www.example.com',
-                               headers={'User-Agent': 'test'})
-        self.response = Response('http://www.example.com',
-                                 headers={'Content-Type': 'text/html'},
-                                 body=b'test body',
-                                 status=202)
+        self.request = Request('http://www.example.com', headers={'User-Agent': 'test'})
+        self.response = Response(
+            'http://www.example.com', headers={'Content-Type': 'text/html'}, body=b'test body', status=202
+        )
         self.crawler.stats.open_spider(self.spider)
 
     def tearDown(self):
@@ -101,7 +99,6 @@ class _BaseTest(unittest.TestCase):
 
 
 class DefaultStorageTest(_BaseTest):
-
     def test_storage(self):
         with self._storage() as storage:
             request2 = self.request.copy()
@@ -148,7 +145,6 @@ class FilesystemStorageTest(DefaultStorageTest):
 
 
 class FilesystemStorageGzipTest(FilesystemStorageTest):
-
     def _get_settings(self, **new_settings):
         new_settings.setdefault('HTTPCACHE_GZIP', True)
         return super(FilesystemStorageTest, self)._get_settings(**new_settings)
@@ -268,8 +264,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
             raise
 
     def test_request_cacheability(self):
-        res0 = Response(self.request.url, status=200,
-                        headers={'Expires': self.tomorrow})
+        res0 = Response(self.request.url, status=200, headers={'Expires': self.tomorrow})
         req0 = Request('http://example.com')
         req1 = req0.replace(headers={'Cache-Control': 'no-store'})
         req2 = req0.replace(headers={'Cache-Control': 'no-cache'})
@@ -364,25 +359,35 @@ class RFC2616PolicyTest(DefaultStorageTest):
             (200, {'Date': self.yesterday, 'Cache-Control': 'max-age=86405'}),
             (200, {'Age': '299', 'Cache-Control': 'max-age=300'}),
             # Obey max-age if present over any others
-            (200, {'Date': self.today,
-                   'Age': '86405',
-                   'Cache-Control': 'max-age=' + str(86400 * 3),
-                   'Expires': self.yesterday,
-                   'Last-Modified': self.yesterday,
-                   }),
+            (
+                200,
+                {
+                    'Date': self.today,
+                    'Age': '86405',
+                    'Cache-Control': 'max-age=' + str(86400 * 3),
+                    'Expires': self.yesterday,
+                    'Last-Modified': self.yesterday,
+                },
+            ),
             # obey Expires if max-age is not present
-            (200, {'Date': self.yesterday,
-                   'Age': '86400',
-                   'Cache-Control': 'public',
-                   'Expires': self.tomorrow,
-                   'Last-Modified': self.yesterday,
-                   }),
+            (
+                200,
+                {
+                    'Date': self.yesterday,
+                    'Age': '86400',
+                    'Cache-Control': 'public',
+                    'Expires': self.tomorrow,
+                    'Last-Modified': self.yesterday,
+                },
+            ),
             # Default missing Date header to right now
             (200, {'Expires': self.tomorrow}),
             # Firefox - Expires if age is greater than 10% of (Date - Last-Modified)
             (200, {'Date': self.today, 'Last-Modified': self.yesterday, 'Age': str(86400 / 10 - 1)}),
             # Firefox - Set one year maxage to permanent redirects missing expiration info
-            (300, {}), (301, {}), (308, {}),
+            (300, {}),
+            (301, {}),
+            (308, {}),
         ]
         with self._middleware() as mw:
             for idx, (status, headers) in enumerate(sampledata):

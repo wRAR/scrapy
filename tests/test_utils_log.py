@@ -5,14 +5,12 @@ import unittest
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
-                              LogCounterHandler, StreamLogger)
+from scrapy.utils.log import failure_to_exc_info, TopLevelFormatter, LogCounterHandler, StreamLogger
 from scrapy.utils.test import get_crawler
 from scrapy.extensions import telnet
 
 
 class FailureToExcInfoTest(unittest.TestCase):
-
     def test_failure(self):
         try:
             0 / 0
@@ -27,7 +25,6 @@ class FailureToExcInfoTest(unittest.TestCase):
 
 
 class TopLevelFormatterTest(unittest.TestCase):
-
     def setUp(self):
         self.handler = LogCapture()
         self.handler.addFilter(TopLevelFormatter(['test']))
@@ -58,7 +55,6 @@ class TopLevelFormatterTest(unittest.TestCase):
 
 
 class LogCounterHandlerTest(unittest.TestCase):
-
     def setUp(self):
         settings = {'LOG_LEVEL': 'WARNING'}
         if not telnet.TWISTED_CONCH_AVAILABLE:
@@ -92,7 +88,6 @@ class LogCounterHandlerTest(unittest.TestCase):
 
 
 class StreamLoggerTest(unittest.TestCase):
-
     def setUp(self):
         self.stdout = sys.stdout
         logger = logging.getLogger('test')

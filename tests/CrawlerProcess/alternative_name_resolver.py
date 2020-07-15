@@ -7,9 +7,6 @@ class IPv6Spider(scrapy.Spider):
     start_urls = ["http://[::1]"]
 
 
-process = CrawlerProcess(settings={
-    "RETRY_ENABLED": False,
-    "DNS_RESOLVER": "scrapy.resolver.CachingHostnameResolver",
-})
+process = CrawlerProcess(settings={"RETRY_ENABLED": False, "DNS_RESOLVER": "scrapy.resolver.CachingHostnameResolver",})
 process.crawl(IPv6Spider)
 process.start()

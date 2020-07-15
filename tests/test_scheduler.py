@@ -79,11 +79,13 @@ class SchedulerHandler:
         self.close_scheduler()
 
 
-_PRIORITIES = [("http://foo.com/a", -2),
-               ("http://foo.com/d", 1),
-               ("http://foo.com/b", -1),
-               ("http://foo.com/c", 0),
-               ("http://foo.com/e", 2)]
+_PRIORITIES = [
+    ("http://foo.com/a", -2),
+    ("http://foo.com/d", 1),
+    ("http://foo.com/b", -1),
+    ("http://foo.com/c", 0),
+    ("http://foo.com/e", 2),
+]
 
 
 _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
@@ -118,12 +120,10 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities,
-                         sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
+        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
-
     def setUp(self):
         self.jobdir = tempfile.mkdtemp()
         self.create_scheduler()
@@ -171,8 +171,7 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities,
-                         sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
+        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
@@ -183,16 +182,17 @@ class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
-_URLS_WITH_SLOTS = [("http://foo.com/a", 'a'),
-                    ("http://foo.com/b", 'a'),
-                    ("http://foo.com/c", 'b'),
-                    ("http://foo.com/d", 'b'),
-                    ("http://foo.com/e", 'c'),
-                    ("http://foo.com/f", 'c')]
+_URLS_WITH_SLOTS = [
+    ("http://foo.com/a", 'a'),
+    ("http://foo.com/b", 'a'),
+    ("http://foo.com/c", 'b'),
+    ("http://foo.com/d", 'b'),
+    ("http://foo.com/e", 'c'),
+    ("http://foo.com/f", 'c'),
+]
 
 
 class TestMigration(unittest.TestCase):
-
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
 
@@ -238,7 +238,7 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
 
     slots_number = len(set(enqueued_slots))
     for i in range(0, len(dequeued_slots), slots_number):
-        part = dequeued_slots[i:i + slots_number]
+        part = dequeued_slots[i : i + slots_number]
         if len(part) != len(set(part)):
             return False
 
@@ -275,25 +275,23 @@ class DownloaderAwareSchedulerTestMixin:
             slot = downloader._get_slot_key(request, None)
             downloader.decrement(slot)
 
-        self.assertTrue(_is_scheduling_fair(list(s for u, s in _URLS_WITH_SLOTS),
-                                            dequeued_slots))
+        self.assertTrue(_is_scheduling_fair(list(s for u, s in _URLS_WITH_SLOTS), dequeued_slots))
         self.assertEqual(sum(len(s.active) for s in downloader.slots.values()), 0)
 
 
-class TestSchedulerWithDownloaderAwareInMemory(DownloaderAwareSchedulerTestMixin,
-                                               BaseSchedulerInMemoryTester,
-                                               unittest.TestCase):
+class TestSchedulerWithDownloaderAwareInMemory(
+    DownloaderAwareSchedulerTestMixin, BaseSchedulerInMemoryTester, unittest.TestCase
+):
     pass
 
 
-class TestSchedulerWithDownloaderAwareOnDisk(DownloaderAwareSchedulerTestMixin,
-                                             BaseSchedulerOnDiskTester,
-                                             unittest.TestCase):
+class TestSchedulerWithDownloaderAwareOnDisk(
+    DownloaderAwareSchedulerTestMixin, BaseSchedulerOnDiskTester, unittest.TestCase
+):
     reopen = True
 
 
 class StartUrlsSpider(Spider):
-
     def __init__(self, start_urls):
         self.start_urls = start_urls
         super(StartUrlsSpider, self).__init__(name='StartUrlsSpider')
@@ -323,16 +321,13 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)
-            self.assertEqual(self.crawler.stats.get_value('downloader/response_count'),
-                             len(start_urls))
+            self.assertEqual(self.crawler.stats.get_value('downloader/response_count'), len(start_urls))
 
 
 class TestIncompatibility(unittest.TestCase):
-
     def _incompatible(self):
         settings = dict(
-            SCHEDULER_PRIORITY_QUEUE='scrapy.pqueues.DownloaderAwarePriorityQueue',
-            CONCURRENT_REQUESTS_PER_IP=1,
+            SCHEDULER_PRIORITY_QUEUE='scrapy.pqueues.DownloaderAwarePriorityQueue', CONCURRENT_REQUESTS_PER_IP=1,
         )
         crawler = Crawler(Spider, settings)
         scheduler = Scheduler.from_crawler(crawler)

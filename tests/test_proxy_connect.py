@@ -24,23 +24,32 @@ class MitmProxy:
 
     def start(self):
         from scrapy.utils.test import get_testenv
+
         script = """
 import sys
 from mitmproxy.tools.main import mitmdump
 sys.argv[0] = "mitmdump"
 sys.exit(mitmdump())
         """
-        cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                 'keys', 'mitmproxy-ca.pem')
-        self.proc = Popen([sys.executable,
-                           '-c', script,
-                           '--listen-host', '127.0.0.1',
-                           '--listen-port', '0',
-                           '--proxyauth', '%s:%s' % (self.auth_user, self.auth_pass),
-                           '--certs', cert_path,
-                           '--ssl-insecure',
-                           ],
-                          stdout=PIPE, env=get_testenv())
+        cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'keys', 'mitmproxy-ca.pem')
+        self.proc = Popen(
+            [
+                sys.executable,
+                '-c',
+                script,
+                '--listen-host',
+                '127.0.0.1',
+                '--listen-port',
+                '0',
+                '--proxyauth',
+                '%s:%s' % (self.auth_user, self.auth_pass),
+                '--certs',
+                cert_path,
+                '--ssl-insecure',
+            ],
+            stdout=PIPE,
+            env=get_testenv(),
+        )
         line = self.proc.stdout.readline().decode('utf-8')
         host_port = re.search(r'listening at http://([^:]+:\d+)', line).group(1)
         address = 'http://%s:%s@%s' % (self.auth_user, self.auth_pass, host_port)
@@ -57,10 +66,8 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-@skipIf(sys.version_info < (3, 5, 4),
-        "requires mitmproxy < 3.0.0, which these tests do not support")
+@skipIf(sys.version_info < (3, 5, 4), "requires mitmproxy < 3.0.0, which these tests do not support")
 class ProxyConnectTestCase(TestCase):
-
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()

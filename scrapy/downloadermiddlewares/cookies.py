@@ -51,8 +51,7 @@ class CookiesMiddleware:
 
     def _debug_cookie(self, request, spider):
         if self.debug:
-            cl = [to_unicode(c, errors='replace')
-                  for c in request.headers.getlist('Cookie')]
+            cl = [to_unicode(c, errors='replace') for c in request.headers.getlist('Cookie')]
             if cl:
                 cookies = "\n".join("Cookie: {}\n".format(c) for c in cl)
                 msg = "Sending cookies to: {}\n{}".format(request, cookies)
@@ -60,8 +59,7 @@ class CookiesMiddleware:
 
     def _debug_set_cookie(self, response, spider):
         if self.debug:
-            cl = [to_unicode(c, errors='replace')
-                  for c in response.headers.getlist('Set-Cookie')]
+            cl = [to_unicode(c, errors='replace') for c in response.headers.getlist('Set-Cookie')]
             if cl:
                 cookies = "\n".join("Set-Cookie: {}\n".format(c) for c in cl)
                 msg = "Received cookies from: {}\n{}".format(response, cookies)
@@ -86,8 +84,7 @@ class CookiesMiddleware:
                 try:
                     decoded[key] = cookie[key].decode("utf8")
                 except UnicodeDecodeError:
-                    logger.warning("Non UTF-8 encoded cookie found in request %s: %s",
-                                   request, cookie)
+                    logger.warning("Non UTF-8 encoded cookie found in request %s: %s", request, cookie)
                     decoded[key] = cookie[key].decode("latin1", errors="replace")
 
         cookie_str = "{}={}".format(decoded.pop("name"), decoded.pop("value"))
@@ -100,6 +97,7 @@ class CookiesMiddleware:
         Extract cookies from a Request. Values from the `Request.cookies` attribute
         take precedence over values from the `Cookie` request header.
         """
+
         def get_cookies_from_header(jar, request):
             cookie_header = request.headers.get("Cookie")
             if not cookie_header:
@@ -110,8 +108,7 @@ class CookiesMiddleware:
                 try:
                     cookie_unicode = cookie_bytes.decode("utf8")
                 except UnicodeDecodeError:
-                    logger.warning("Non UTF-8 encoded cookie found in request %s: %s",
-                                   request, cookie_bytes)
+                    logger.warning("Non UTF-8 encoded cookie found in request %s: %s", request, cookie_bytes)
                     cookie_unicode = cookie_bytes.decode("latin1", errors="replace")
                 cookie_list_unicode.append(cookie_unicode)
             response = Response(request.url, headers={"Set-Cookie": cookie_list_unicode})

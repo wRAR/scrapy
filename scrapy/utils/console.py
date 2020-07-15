@@ -19,9 +19,9 @@ def _embed_ipython_shell(namespace={}, banner=''):
         # and clear the instance to always have the fresh env
         # on repeated breaks like with inspect_response()
         InteractiveShellEmbed.clear_instance()
-        shell = InteractiveShellEmbed.instance(
-            banner1=banner, user_ns=namespace, config=config)
+        shell = InteractiveShellEmbed.instance(banner1=banner, user_ns=namespace, config=config)
         shell()
+
     return wrapper
 
 
@@ -32,6 +32,7 @@ def _embed_bpython_shell(namespace={}, banner=''):
     @wraps(_embed_bpython_shell)
     def wrapper(namespace=namespace, banner=''):
         bpython.embed(locals_=namespace, banner=banner)
+
     return wrapper
 
 
@@ -43,32 +44,38 @@ def _embed_ptpython_shell(namespace={}, banner=''):
     def wrapper(namespace=namespace, banner=''):
         print(banner)
         ptpython.repl.embed(locals=namespace)
+
     return wrapper
 
 
 def _embed_standard_shell(namespace={}, banner=''):
     """Start a standard python shell"""
     import code
+
     try:  # readline module is only available on unix systems
         import readline
     except ImportError:
         pass
     else:
         import rlcompleter  # noqa: F401
+
         readline.parse_and_bind("tab:complete")
 
     @wraps(_embed_standard_shell)
     def wrapper(namespace=namespace, banner=''):
         code.interact(banner=banner, local=namespace)
+
     return wrapper
 
 
-DEFAULT_PYTHON_SHELLS = OrderedDict([
-    ('ptpython', _embed_ptpython_shell),
-    ('ipython', _embed_ipython_shell),
-    ('bpython', _embed_bpython_shell),
-    ('python', _embed_standard_shell),
-])
+DEFAULT_PYTHON_SHELLS = OrderedDict(
+    [
+        ('ptpython', _embed_ptpython_shell),
+        ('ipython', _embed_ipython_shell),
+        ('bpython', _embed_bpython_shell),
+        ('python', _embed_standard_shell),
+    ]
+)
 
 
 def get_shell_embed_func(shells=None, known_shells=None):

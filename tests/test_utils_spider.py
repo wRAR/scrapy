@@ -15,7 +15,6 @@ class MySpider2(Spider):
 
 
 class UtilsSpidersTestCase(unittest.TestCase):
-
     def test_iterate_spider_output(self):
         i = Item()
         r = Request('http://scrapytest.org')
@@ -28,6 +27,7 @@ class UtilsSpidersTestCase(unittest.TestCase):
 
     def test_iter_spider_classes(self):
         import tests.test_utils_spider
+
         it = iter_spider_classes(tests.test_utils_spider)
         self.assertEqual(set(it), {MySpider1, MySpider2})
 

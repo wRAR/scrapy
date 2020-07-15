@@ -8,7 +8,6 @@ from scrapy.utils.test import get_crawler
 
 
 class RedirectMiddlewareTest(unittest.TestCase):
-
     def setUp(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('foo')
@@ -69,8 +68,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
-        req = Request(url, method='POST', body='test',
-                      headers={'Content-Type': 'text/plain', 'Content-length': '4'})
+        req = Request(url, method='POST', body='test', headers={'Content-Type': 'text/plain', 'Content-length': '4'})
         rsp = Response(url, headers={'Location': url2}, status=302)
 
         req2 = self.mw.process_response(req, rsp, self.spider)
@@ -147,8 +145,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(
-            req3.meta['redirect_urls'],
-            ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
+            req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
         )
 
     def test_redirect_reasons(self):
@@ -179,6 +176,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
             rsp = Response(url, headers={'Location': url2}, status=301, request=req)
             r = self.mw.process_response(req, rsp, self.spider)
             self.assertIs(r, rsp)
+
         _test_passthrough(Request(url, meta={'handle_httpstatus_list': [404, 301, 302]}))
         _test_passthrough(Request(url, meta={'handle_httpstatus_all': True}))
 
@@ -200,7 +198,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
-
     def setUp(self):
         crawler = get_crawler(Spider)
         self.spider = crawler._create_spider('foo')
@@ -226,15 +223,17 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
     def test_meta_refresh_with_high_interval(self):
         # meta-refresh with high intervals don't trigger redirects
         req = Request(url='http://example.org')
-        rsp = HtmlResponse(url='http://example.org',
-                           body=self._body(interval=1000),
-                           encoding='utf-8')
+        rsp = HtmlResponse(url='http://example.org', body=self._body(interval=1000), encoding='utf-8')
         rsp2 = self.mw.process_response(req, rsp, self.spider)
         assert rsp is rsp2
 
     def test_meta_refresh_trough_posted_request(self):
-        req = Request(url='http://example.org', method='POST', body='test',
-                      headers={'Content-Type': 'text/plain', 'Content-length': '4'})
+        req = Request(
+            url='http://example.org',
+            method='POST',
+            body='test',
+            headers={'Content-Type': 'text/plain', 'Content-length': '4'},
+        )
         rsp = HtmlResponse(req.url, body=self._body())
         req2 = self.mw.process_response(req, rsp, self.spider)
 
@@ -277,8 +276,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(
-            req3.meta['redirect_urls'],
-            ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
+            req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
         )
 
     def test_redirect_reasons(self):
@@ -293,8 +291,9 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
 
     def test_ignore_tags_default(self):
         req = Request(url='http://example.org')
-        body = ('''<noscript><meta http-equiv="refresh" '''
-                '''content="0;URL='http://example.org/newpage'"></noscript>''')
+        body = (
+            '''<noscript><meta http-equiv="refresh" ''' '''content="0;URL='http://example.org/newpage'"></noscript>'''
+        )
         rsp = HtmlResponse(req.url, body=body.encode())
         req2 = self.mw.process_response(req, rsp, self.spider)
         assert isinstance(req2, Request)
@@ -306,8 +305,9 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         crawler = get_crawler(Spider, settings)
         mw = MetaRefreshMiddleware.from_crawler(crawler)
         req = Request(url='http://example.org')
-        body = ('''<noscript><meta http-equiv="refresh" '''
-                '''content="0;URL='http://example.org/newpage'"></noscript>''')
+        body = (
+            '''<noscript><meta http-equiv="refresh" ''' '''content="0;URL='http://example.org/newpage'"></noscript>'''
+        )
         rsp = HtmlResponse(req.url, body=body.encode())
         response = mw.process_response(req, rsp, self.spider)
         assert isinstance(response, Response)

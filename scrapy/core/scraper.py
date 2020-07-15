@@ -63,7 +63,6 @@ class Slot:
 
 
 class Scraper:
-
     def __init__(self, crawler):
         self.slot = None
         self.spidermw = SpiderMiddlewareManager.from_crawler(crawler)
@@ -108,10 +107,13 @@ class Scraper:
 
         dfd.addBoth(finish_scraping)
         dfd.addErrback(
-            lambda f: logger.error('Scraper bug processing %(request)s',
-                                   {'request': request},
-                                   exc_info=failure_to_exc_info(f),
-                                   extra={'spider': spider}))
+            lambda f: logger.error(
+                'Scraper bug processing %(request)s',
+                {'request': request},
+                exc_info=failure_to_exc_info(f),
+                extra={'spider': spider},
+            )
+        )
         self._scrape_next(spider, slot)
         return dfd
 
@@ -124,10 +126,7 @@ class Scraper:
         """Handle the downloaded response or failure through the spider
         callback/errback"""
         if not isinstance(response, (Response, Failure)):
-            raise TypeError(
-                "Incorrect type: expected Response or Failure, got %s: %r"
-                % (type(response), response)
-            )
+            raise TypeError("Incorrect type: expected Response or Failure, got %s: %r" % (type(response), response))
 
         dfd = self._scrape2(response, request, spider)  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, response, spider)
@@ -138,12 +137,10 @@ class Scraper:
         """Handle the different cases of request's result been a Response or a
         Failure"""
         if not isinstance(request_result, Failure):
-            return self.spidermw.scrape_response(
-                self.call_spider, request_result, request, spider)
+            return self.spidermw.scrape_response(self.call_spider, request_result, request, spider)
         else:
             dfd = self.call_spider(request_result, request, spider)
-            return dfd.addErrback(
-                self._log_download_errors, request_result, request, spider)
+            return dfd.addErrback(self._log_download_errors, request_result, request, spider)
 
     def call_spider(self, result, request, spider):
         result.request = request
@@ -151,9 +148,7 @@ class Scraper:
         callback = request.callback or spider.parse
         warn_on_generator_with_return_value(spider, callback)
         warn_on_generator_with_return_value(spider, request.errback)
-        dfd.addCallbacks(callback=callback,
-                         errback=request.errback,
-                         callbackKeywords=request.cb_kwargs)
+        dfd.addCallbacks(callback=callback, errback=request.errback, callbackKeywords=request.cb_kwargs)
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(self, _failure, request, response, spider):
@@ -162,27 +157,15 @@ class Scraper:
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
         logkws = self.logformatter.spider_error(_failure, request, response, spider)
-        logger.log(
-            *logformatter_adapter(logkws),
-            exc_info=failure_to_exc_info(_failure),
-            extra={'spider': spider}
-        )
-        self.signals.send_catch_log(
-            signal=signals.spider_error,
-            failure=_failure, response=response,
-            spider=spider
-        )
-        self.crawler.stats.inc_value(
-            "spider_exceptions/%s" % _failure.value.__class__.__name__,
-            spider=spider
-        )
+        logger.log(*logformatter_adapter(logkws), exc_info=failure_to_exc_info(_failure), extra={'spider': spider})
+        self.signals.send_catch_log(signal=signals.spider_error, failure=_failure, response=response, spider=spider)
+        self.crawler.stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, spider=spider)
 
     def handle_spider_output(self, result, request, response, spider):
         if not result:
             return defer_succeed(None)
         it = iter_errback(result, self.handle_spider_error, request, response, spider)
-        dfd = parallel(it, self.concurrent_items, self._process_spidermw_output,
-                       request, response, spider)
+        dfd = parallel(it, self.concurrent_items, self._process_spidermw_output, request, response, spider)
         return dfd
 
     def _process_spidermw_output(self, output, request, response, spider):
@@ -221,11 +204,9 @@ class Scraper:
             else:
                 errmsg = download_failure.getErrorMessage()
                 if errmsg:
-                    logkws = self.logformatter.download_error(
-                        download_failure, request, spider, errmsg)
+                    logkws = self.logformatter.download_error(download_failure, request, spider, errmsg)
                     logger.log(
-                        *logformatter_adapter(logkws),
-                        extra={'spider': spider},
+                        *logformatter_adapter(logkws), extra={'spider': spider},
                     )
 
         if spider_failure is not download_failure:
@@ -242,19 +223,20 @@ class Scraper:
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
                 return self.signals.send_catch_log_deferred(
-                    signal=signals.item_dropped, item=item, response=response,
-                    spider=spider, exception=output.value)
+                    signal=signals.item_dropped, item=item, response=response, spider=spider, exception=output.value
+                )
             else:
                 logkws = self.logformatter.item_error(item, ex, response, spider)
-                logger.log(*logformatter_adapter(logkws), extra={'spider': spider},
-                           exc_info=failure_to_exc_info(output))
+                logger.log(
+                    *logformatter_adapter(logkws), extra={'spider': spider}, exc_info=failure_to_exc_info(output)
+                )
                 return self.signals.send_catch_log_deferred(
-                    signal=signals.item_error, item=item, response=response,
-                    spider=spider, failure=output)
+                    signal=signals.item_error, item=item, response=response, spider=spider, failure=output
+                )
         else:
             logkws = self.logformatter.scraped(output, response, spider)
             if logkws is not None:
                 logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
             return self.signals.send_catch_log_deferred(
-                signal=signals.item_scraped, item=output, response=response,
-                spider=spider)
+                signal=signals.item_scraped, item=output, response=response, spider=spider
+            )

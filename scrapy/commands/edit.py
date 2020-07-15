@@ -17,8 +17,9 @@ class Command(ScrapyCommand):
         return "Edit spider"
 
     def long_desc(self):
-        return ("Edit a spider using the editor defined in the EDITOR environment"
-                " variable or else the EDITOR setting")
+        return (
+            "Edit a spider using the editor defined in the EDITOR environment" " variable or else the EDITOR setting"
+        )
 
     def _err(self, msg):
         sys.stderr.write(msg + os.linesep)

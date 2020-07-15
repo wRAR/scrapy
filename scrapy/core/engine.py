@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class Slot:
-
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
         self.inprogress = set()  # requests in progress
@@ -54,7 +53,6 @@ class Slot:
 
 
 class ExecutionEngine:
-
     def __init__(self, crawler, spider_closed_callback):
         self.crawler = crawler
         self.settings = crawler.settings
@@ -131,8 +129,7 @@ class ExecutionEngine:
                 slot.start_requests = None
             except Exception:
                 slot.start_requests = None
-                logger.error('Error while obtaining start requests',
-                             exc_info=True, extra={'spider': spider})
+                logger.error('Error while obtaining start requests', exc_info=True, extra={'spider': spider})
             else:
                 self.crawl(request, spider)
 
@@ -141,12 +138,7 @@ class ExecutionEngine:
 
     def _needs_backout(self, spider):
         slot = self.slot
-        return (
-            not self.running
-            or slot.closing
-            or self.downloader.needs_backout()
-            or self.scraper.slot.needs_backout()
-        )
+        return not self.running or slot.closing or self.downloader.needs_backout() or self.scraper.slot.needs_backout()
 
     def _next_request_from_scheduler(self, spider):
         slot = self.slot
@@ -155,24 +147,29 @@ class ExecutionEngine:
             return
         d = self._download(request, spider)
         d.addBoth(self._handle_downloader_output, request, spider)
-        d.addErrback(lambda f: logger.info('Error while handling downloader output',
-                                           exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+        d.addErrback(
+            lambda f: logger.info(
+                'Error while handling downloader output', exc_info=failure_to_exc_info(f), extra={'spider': spider}
+            )
+        )
         d.addBoth(lambda _: slot.remove_request(request))
-        d.addErrback(lambda f: logger.info('Error while removing request from slot',
-                                           exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+        d.addErrback(
+            lambda f: logger.info(
+                'Error while removing request from slot', exc_info=failure_to_exc_info(f), extra={'spider': spider}
+            )
+        )
         d.addBoth(lambda _: slot.nextcall.schedule())
-        d.addErrback(lambda f: logger.info('Error while scheduling new request',
-                                           exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+        d.addErrback(
+            lambda f: logger.info(
+                'Error while scheduling new request', exc_info=failure_to_exc_info(f), extra={'spider': spider}
+            )
+        )
         return d
 
     def _handle_downloader_output(self, response, request, spider):
         if not isinstance(response, (Request, Response, Failure)):
             raise TypeError(
-                "Incorrect type: expected Request, Response or Failure, got %s: %r"
-                % (type(response), response)
+                "Incorrect type: expected Request, Response or Failure, got %s: %r" % (type(response), response)
             )
         # downloader middleware can return requests (for example, redirects)
         if isinstance(response, Request):
@@ -180,9 +177,11 @@ class ExecutionEngine:
             return
         # response is a Response or Failure
         d = self.scraper.enqueue_scrape(response, request, spider)
-        d.addErrback(lambda f: logger.error('Error while enqueuing downloader output',
-                                            exc_info=failure_to_exc_info(f),
-                                            extra={'spider': spider}))
+        d.addErrback(
+            lambda f: logger.error(
+                'Error while enqueuing downloader output', exc_info=failure_to_exc_info(f), extra={'spider': spider}
+            )
+        )
         return d
 
     def spider_is_idle(self, spider):
@@ -239,16 +238,16 @@ class ExecutionEngine:
         def _on_success(response):
             if not isinstance(response, (Response, Request)):
                 raise TypeError(
-                    "Incorrect type: expected Response or Request, got %s: %r"
-                    % (type(response), response)
+                    "Incorrect type: expected Response or Request, got %s: %r" % (type(response), response)
                 )
             if isinstance(response, Response):
                 response.request = request  # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
-                self.signals.send_catch_log(signals.response_received,
-                                            response=response, request=request, spider=spider)
+                self.signals.send_catch_log(
+                    signals.response_received, response=response, request=request, spider=spider
+                )
             return response
 
         def _on_complete(_):
@@ -299,19 +298,14 @@ class ExecutionEngine:
         slot = self.slot
         if slot.closing:
             return slot.closing
-        logger.info("Closing spider (%(reason)s)",
-                    {'reason': reason},
-                    extra={'spider': spider})
+        logger.info("Closing spider (%(reason)s)", {'reason': reason}, extra={'spider': spider})
 
         dfd = slot.close()
 
         def log_failure(msg):
             def errback(failure):
-                logger.error(
-                    msg,
-                    exc_info=failure_to_exc_info(failure),
-                    extra={'spider': spider}
-                )
+                logger.error(msg, exc_info=failure_to_exc_info(failure), extra={'spider': spider})
+
             return errback
 
         dfd.addBoth(lambda _: self.downloader.close())
@@ -323,16 +317,15 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: slot.scheduler.close(reason))
         dfd.addErrback(log_failure('Scheduler close failure'))
 
-        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(
-            signal=signals.spider_closed, spider=spider, reason=reason))
+        dfd.addBoth(
+            lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed, spider=spider, reason=reason)
+        )
         dfd.addErrback(log_failure('Error while sending spider_close signal'))
 
         dfd.addBoth(lambda _: self.crawler.stats.close_spider(spider, reason=reason))
         dfd.addErrback(log_failure('Stats close failure'))
 
-        dfd.addBoth(lambda _: logger.info("Spider closed (%(reason)s)",
-                                          {'reason': reason},
-                                          extra={'spider': spider}))
+        dfd.addBoth(lambda _: logger.info("Spider closed (%(reason)s)", {'reason': reason}, extra={'spider': spider}))
 
         dfd.addBoth(lambda _: setattr(self, 'slot', None))
         dfd.addErrback(log_failure('Error while unassigning slot'))

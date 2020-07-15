@@ -12,7 +12,6 @@ from scrapy.utils.trackref import live_refs
 
 
 class MemoryDebugger:
-
     def __init__(self, stats):
         self.stats = stats
 

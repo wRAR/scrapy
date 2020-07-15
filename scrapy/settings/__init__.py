@@ -128,9 +128,11 @@ class BaseSettings(MutableMapping):
                 return True
             if got in ("False", "false"):
                 return False
-            raise ValueError("Supported values for boolean settings "
-                             "are 0/1, True/False, '0'/'1', "
-                             "'True'/'False' and 'true'/'false'")
+            raise ValueError(
+                "Supported values for boolean settings "
+                "are 0/1, True/False, '0'/'1', "
+                "'True'/'False' and 'true'/'false'"
+            )
 
     def getint(self, name, default=0):
         """
@@ -374,8 +376,7 @@ class BaseSettings(MutableMapping):
         return len(self.attributes)
 
     def _to_dict(self):
-        return {k: (v._to_dict() if isinstance(v, BaseSettings) else v)
-                for k, v in self.items()}
+        return {k: (v._to_dict() if isinstance(v, BaseSettings) else v) for k, v in self.items()}
 
     def copy_to_dict(self):
         """
@@ -401,7 +402,6 @@ class BaseSettings(MutableMapping):
 
 
 class _DictProxy(MutableMapping):
-
     def __init__(self, settings, priority):
         self.o = {}
         self.settings = settings

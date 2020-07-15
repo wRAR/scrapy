@@ -16,7 +16,6 @@ from tests.spiders import SimpleSpider
 
 
 class FromCrawlerRFPDupeFilter(RFPDupeFilter):
-
     @classmethod
     def from_crawler(cls, crawler):
         debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
@@ -26,7 +25,6 @@ class FromCrawlerRFPDupeFilter(RFPDupeFilter):
 
 
 class FromSettingsRFPDupeFilter(RFPDupeFilter):
-
     @classmethod
     def from_settings(cls, settings):
         debug = settings.getbool('DUPEFILTER_DEBUG')
@@ -40,18 +38,15 @@ class DirectDupeFilter:
 
 
 class RFPDupeFilterTest(unittest.TestCase):
-
     def test_df_from_crawler_scheduler(self):
-        settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
+        settings = {'DUPEFILTER_DEBUG': True, 'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'from_crawler')
 
     def test_df_from_settings_scheduler(self):
-        settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': __name__ + '.FromSettingsRFPDupeFilter'}
+        settings = {'DUPEFILTER_DEBUG': True, 'DUPEFILTER_CLASS': __name__ + '.FromSettingsRFPDupeFilter'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
@@ -121,7 +116,6 @@ class RFPDupeFilterTest(unittest.TestCase):
         dupefilter.close('finished')
 
         class CaseInsensitiveRFPDupeFilter(RFPDupeFilter):
-
             def request_fingerprint(self, request):
                 fp = hashlib.sha1()
                 fp.update(to_bytes(request.url.lower()))
@@ -161,8 +155,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_log(self):
         with LogCapture() as log:
-            settings = {'DUPEFILTER_DEBUG': False,
-                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
+            settings = {'DUPEFILTER_DEBUG': False, 'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)
@@ -182,7 +175,7 @@ class RFPDupeFilterTest(unittest.TestCase):
                     'scrapy.dupefilters',
                     'DEBUG',
                     'Filtered duplicate request: <GET http://scrapytest.org/index.html> - no more'
-                    ' duplicates will be shown (see DUPEFILTER_DEBUG to show all duplicates)'
+                    ' duplicates will be shown (see DUPEFILTER_DEBUG to show all duplicates)',
                 )
             )
 
@@ -190,8 +183,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_log_debug(self):
         with LogCapture() as log:
-            settings = {'DUPEFILTER_DEBUG': True,
-                        'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
+            settings = {'DUPEFILTER_DEBUG': True, 'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)
@@ -200,8 +192,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.open()
 
             r1 = Request('http://scrapytest.org/index.html')
-            r2 = Request('http://scrapytest.org/index.html',
-                         headers={'Referer': 'http://scrapytest.org/INDEX.html'})
+            r2 = Request('http://scrapytest.org/index.html', headers={'Referer': 'http://scrapytest.org/INDEX.html'})
 
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
@@ -211,7 +202,7 @@ class RFPDupeFilterTest(unittest.TestCase):
                 (
                     'scrapy.dupefilters',
                     'DEBUG',
-                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> (referer: None)'
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> (referer: None)',
                 )
             )
             log.check_present(
@@ -219,7 +210,7 @@ class RFPDupeFilterTest(unittest.TestCase):
                     'scrapy.dupefilters',
                     'DEBUG',
                     'Filtered duplicate request: <GET http://scrapytest.org/index.html>'
-                    ' (referer: http://scrapytest.org/INDEX.html)'
+                    ' (referer: http://scrapytest.org/INDEX.html)',
                 )
             )
 

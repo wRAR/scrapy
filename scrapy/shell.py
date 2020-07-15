@@ -72,8 +72,7 @@ class Shell:
                 shells += DEFAULT_PYTHON_SHELLS.keys()
             # always add standard shell as fallback
             shells += ['python']
-            start_python_console(self.vars, shells=shells,
-                                 banner=self.vars.pop('banner', ''))
+            start_python_console(self.vars, shells=shells, banner=self.vars.pop('banner', ''))
 
     def _schedule(self, request, spider):
         spider = self._open_spider(request, spider)
@@ -96,6 +95,7 @@ class Shell:
 
     def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
         from twisted.internet import reactor
+
         if isinstance(request_or_url, Request):
             request = request_or_url
         else:
@@ -107,8 +107,7 @@ class Shell:
                 request.meta['handle_httpstatus_all'] = True
         response = None
         try:
-            response, spider = threads.blockingCallFromThread(
-                reactor, self._schedule, request, spider)
+            response, spider = threads.blockingCallFromThread(reactor, self._schedule, request, spider)
         except IgnoreRequest:
             pass
         self.populate_vars(response, request, spider)
@@ -143,10 +142,11 @@ class Shell:
                 b.append("  %-10s %s" % (k, v))
         b.append("Useful shortcuts:")
         if self.inthread:
-            b.append("  fetch(url[, redirect=True]) "
-                     "Fetch URL and update local objects (by default, redirects are followed)")
-            b.append("  fetch(req)                  "
-                     "Fetch a scrapy.Request and update local objects ")
+            b.append(
+                "  fetch(url[, redirect=True]) "
+                "Fetch URL and update local objects (by default, redirects are followed)"
+            )
+            b.append("  fetch(req)                  " "Fetch a scrapy.Request and update local objects ")
         b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 

@@ -40,6 +40,7 @@ def get_s3_content_and_delete(bucket, path, with_key=False):
     """
     if is_botocore():
         import botocore.session
+
         session = botocore.session.get_session()
         client = session.create_client('s3')
         key = client.get_object(Bucket=bucket, Key=path)
@@ -47,6 +48,7 @@ def get_s3_content_and_delete(bucket, path, with_key=False):
         client.delete_object(Bucket=bucket, Key=path)
     else:
         import boto
+
         # assuming boto=2.2.2
         bucket = boto.connect_s3().get_bucket(bucket, validate=False)
         key = bucket.get_key(path)
@@ -57,6 +59,7 @@ def get_s3_content_and_delete(bucket, path, with_key=False):
 
 def get_gcs_content_and_delete(bucket, path):
     from google.cloud import storage
+
     client = storage.Client(project=os.environ.get('GCS_PROJECT_ID'))
     bucket = client.get_bucket(bucket)
     blob = bucket.get_blob(path)
@@ -66,10 +69,9 @@ def get_gcs_content_and_delete(bucket, path):
     return content, acl, blob
 
 
-def get_ftp_content_and_delete(
-        path, host, port, username,
-        password, use_active_mode=False):
+def get_ftp_content_and_delete(path, host, port, username, password, use_active_mode=False):
     from ftplib import FTP
+
     ftp = FTP()
     ftp.connect(host, port)
     ftp.login(username, password)
@@ -79,6 +81,7 @@ def get_ftp_content_and_delete(
 
     def buffer_data(data):
         ftp_data.append(data)
+
     ftp.retrbinary('RETR %s' % path, buffer_data)
     dirname, filename = split(path)
     ftp.cwd(dirname)

@@ -6,7 +6,7 @@ from scrapy.squeues import (
     MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
     MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
     PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
-    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
+    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue,
 )
 from scrapy.item import Item, Field
 from scrapy.http import Request
@@ -36,7 +36,6 @@ def nonserializable_object_test(self):
 
 
 class FifoDiskQueueTestMixin:
-
     def test_serialize(self):
         q = self.queue()
         q.push('a')
@@ -139,7 +138,6 @@ class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
 
 
 class LifoDiskQueueTestMixin:
-
     def test_serialize(self):
         q = self.queue()
         q.push('a')
@@ -153,13 +151,11 @@ class LifoDiskQueueTestMixin:
 
 
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
-
     def queue(self):
         return MarshalLifoDiskQueue(self.qpath)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
-
     def queue(self):
         return PickleLifoDiskQueue(self.qpath)
 

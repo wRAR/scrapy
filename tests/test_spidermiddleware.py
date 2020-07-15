@@ -11,7 +11,6 @@ from scrapy.core.spidermw import SpiderMiddlewareManager
 
 
 class SpiderMiddlewareTestCase(TestCase):
-
     def setUp(self):
         self.request = Request('http://example.com/index.html')
         self.response = Response(self.request.url, request=self.request)
@@ -37,7 +36,6 @@ class ProcessSpiderInputInvalidOutput(SpiderMiddlewareTestCase):
     """Invalid return value for process_spider_input method"""
 
     def test_invalid_process_spider_input(self):
-
         class InvalidProcessSpiderInputMiddleware:
             def process_spider_input(self, response, spider):
                 return 1
@@ -52,7 +50,6 @@ class ProcessSpiderOutputInvalidOutput(SpiderMiddlewareTestCase):
     """Invalid return value for process_spider_output method"""
 
     def test_invalid_process_spider_output(self):
-
         class InvalidProcessSpiderOutputMiddleware:
             def process_spider_output(self, response, result, spider):
                 return 1
@@ -67,7 +64,6 @@ class ProcessSpiderExceptionInvalidOutput(SpiderMiddlewareTestCase):
     """Invalid return value for process_spider_exception method"""
 
     def test_invalid_process_spider_exception(self):
-
         class InvalidProcessSpiderOutputExceptionMiddleware:
             def process_spider_exception(self, response, exception, spider):
                 return 1
@@ -87,7 +83,6 @@ class ProcessSpiderExceptionReRaise(SpiderMiddlewareTestCase):
     """Re raise the exception by returning None"""
 
     def test_process_spider_exception_return_none(self):
-
         class ProcessSpiderExceptionReturnNoneMiddleware:
             def process_spider_exception(self, response, exception, spider):
                 return None

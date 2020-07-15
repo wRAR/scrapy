@@ -73,10 +73,10 @@ DOWNLOAD_HANDLERS_BASE = {
     'ftp': 'scrapy.core.downloader.handlers.ftp.FTPDownloadHandler',
 }
 
-DOWNLOAD_TIMEOUT = 180      # 3mins
+DOWNLOAD_TIMEOUT = 180  # 3mins
 
-DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024   # 1024m
-DOWNLOAD_WARNSIZE = 32 * 1024 * 1024    # 32m
+DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024  # 1024m
+DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
 
@@ -212,8 +212,8 @@ MAIL_FROM = 'scrapy@localhost'
 MAIL_PASS = None
 MAIL_USER = None
 
-MEMDEBUG_ENABLED = False        # enable memory debugging
-MEMDEBUG_NOTIFY = []            # send memory debugging report by mail at engine shutdown
+MEMDEBUG_ENABLED = False  # enable memory debugging
+MEMDEBUG_NOTIFY = []  # send memory debugging report by mail at engine shutdown
 
 MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
 MEMUSAGE_ENABLED = True

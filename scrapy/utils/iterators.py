@@ -29,7 +29,7 @@ def xmliter(obj, nodename):
     header_start = re.search(HEADER_START_RE, text)
     header_start = header_start.group(1).strip() if header_start else ''
     header_end = re_rsearch(HEADER_END_RE, text)
-    header_end = text[header_end[1]:].strip() if header_end else ''
+    header_end = text[header_end[1] :].strip() if header_end else ''
 
     r = re.compile(r'<%(np)s[\s>].*?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
     for match in r.finditer(text):
@@ -39,6 +39,7 @@ def xmliter(obj, nodename):
 
 def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     from lxml import etree
+
     reader = _StreamReader(obj)
     tag = '{%s}%s' % (namespace, nodename) if namespace else nodename
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
@@ -53,7 +54,6 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
 
 
 class _StreamReader:
-
     def __init__(self, obj):
         self._ptr = 0
         if isinstance(obj, Response):
@@ -117,10 +117,10 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     for row in csv_r:
         row = row_to_unicode(row)
         if len(row) != len(headers):
-            logger.warning("ignoring row %(csvlnum)d (length: %(csvrow)d, "
-                           "should be: %(csvheader)d)",
-                           {'csvlnum': csv_r.line_num, 'csvrow': len(row),
-                            'csvheader': len(headers)})
+            logger.warning(
+                "ignoring row %(csvlnum)d (length: %(csvrow)d, " "should be: %(csvheader)d)",
+                {'csvlnum': csv_r.line_num, 'csvrow': len(row), 'csvheader': len(headers)},
+            )
             continue
         else:
             yield dict(zip(headers, row))
@@ -130,10 +130,7 @@ def _body_or_str(obj, unicode=True):
     expected_types = (Response, str, bytes)
     if not isinstance(obj, expected_types):
         expected_types_str = " or ".join(t.__name__ for t in expected_types)
-        raise TypeError(
-            "Object %r must be %s, not %s"
-            % (obj, expected_types_str, type(obj).__name__)
-        )
+        raise TypeError("Object %r must be %s, not %s" % (obj, expected_types_str, type(obj).__name__))
     if isinstance(obj, Response):
         if not unicode:
             return obj.body

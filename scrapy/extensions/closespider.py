@@ -11,7 +11,6 @@ from scrapy.exceptions import NotConfigured
 
 
 class CloseSpider:
-
     def __init__(self, crawler):
         self.crawler = crawler
 
@@ -53,9 +52,10 @@ class CloseSpider:
 
     def spider_opened(self, spider):
         from twisted.internet import reactor
-        self.task = reactor.callLater(self.close_on['timeout'],
-                                      self.crawler.engine.close_spider, spider,
-                                      reason='closespider_timeout')
+
+        self.task = reactor.callLater(
+            self.close_on['timeout'], self.crawler.engine.close_spider, spider, reason='closespider_timeout'
+        )
 
     def item_scraped(self, item, spider):
         self.counter['itemcount'] += 1

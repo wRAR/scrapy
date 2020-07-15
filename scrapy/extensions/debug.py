@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class StackTraceDump:
-
     def __init__(self, crawler=None):
         self.crawler = crawler
         try:
@@ -38,9 +37,11 @@ class StackTraceDump:
             'enginestatus': format_engine_status(self.crawler.engine),
             'liverefs': format_live_refs(),
         }
-        logger.info("Dumping stack trace and engine status\n"
-                    "%(enginestatus)s\n%(liverefs)s\n%(stackdumps)s",
-                    log_args, extra={'crawler': self.crawler})
+        logger.info(
+            "Dumping stack trace and engine status\n" "%(enginestatus)s\n%(liverefs)s\n%(stackdumps)s",
+            log_args,
+            extra={'crawler': self.crawler},
+        )
 
     def _thread_stacks(self):
         id2name = dict((th.ident, th.name) for th in threading.enumerate())

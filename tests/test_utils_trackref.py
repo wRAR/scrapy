@@ -14,7 +14,6 @@ class Bar(trackref.object_ref):
 
 
 class TrackrefTestCase(unittest.TestCase):
-
     def setUp(self):
         trackref.live_refs.clear()
 
@@ -29,7 +28,8 @@ Live References
 
 Bar                                 1   oldest: 0s ago
 Foo                                 2   oldest: 0s ago
-''')
+''',
+        )
 
         self.assertEqual(
             trackref.format_live_refs(ignore=Foo),
@@ -37,7 +37,8 @@ Foo                                 2   oldest: 0s ago
 Live References
 
 Bar                                 1   oldest: 0s ago
-''')
+''',
+        )
 
     @mock.patch('sys.stdout', new_callable=StringIO)
     def test_print_live_refs_empty(self, stdout):
@@ -48,10 +49,13 @@ Bar                                 1   oldest: 0s ago
     def test_print_live_refs_with_objects(self, stdout):
         o1 = Foo()  # NOQA
         trackref.print_live_refs()
-        self.assertEqual(stdout.getvalue(), '''\
+        self.assertEqual(
+            stdout.getvalue(),
+            '''\
 Live References
 
-Foo                                 1   oldest: 0s ago\n\n''')
+Foo                                 1   oldest: 0s ago\n\n''',
+        )
 
     def test_get_oldest(self):
         o1 = Foo()  # NOQA
@@ -66,6 +70,5 @@ Foo                                 1   oldest: 0s ago\n\n''')
         o2 = Bar()  # NOQA
         o3 = Foo()  # NOQA
         self.assertEqual(
-            set(trackref.iter_all('Foo')),
-            {o1, o3},
+            set(trackref.iter_all('Foo')), {o1, o3},
         )

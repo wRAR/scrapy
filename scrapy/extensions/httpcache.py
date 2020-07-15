@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 class DummyPolicy:
-
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
         self.ignore_http_codes = [int(x) for x in settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES')]
@@ -215,7 +214,6 @@ class RFC2616Policy:
 
 
 class DbmCacheStorage:
-
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
@@ -272,7 +270,6 @@ class DbmCacheStorage:
 
 
 class FilesystemCacheStorage:
-
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
@@ -280,8 +277,9 @@ class FilesystemCacheStorage:
         self._open = gzip.open if self.use_gzip else open
 
     def open_spider(self, spider):
-        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
-                     extra={'spider': spider})
+        logger.debug(
+            "Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir}, extra={'spider': spider}
+        )
 
     def close_spider(self, spider):
         pass

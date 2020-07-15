@@ -9,8 +9,6 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
-process = CrawlerProcess(settings={
-    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-})
+process = CrawlerProcess(settings={"TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",})
 process.crawl(NoRequestsSpider)
 process.start()

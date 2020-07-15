@@ -9,6 +9,7 @@ from scrapy.utils.misc import load_object
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
+
     if len(portrange) > 2:
         raise ValueError("invalid portrange: %s" % portrange)
     if not portrange:
@@ -38,6 +39,7 @@ class CallLaterOnce:
 
     def schedule(self, delay=0):
         from twisted.internet import reactor
+
         if self._call is None:
             self._call = reactor.callLater(delay, self)
 
@@ -70,6 +72,7 @@ def verify_installed_reactor(reactor_path):
     :mod:`~twisted.internet.reactor` does not match the specified import
     path."""
     from twisted.internet import reactor
+
     reactor_class = load_object(reactor_path)
     if not isinstance(reactor, reactor_class):
         msg = "The installed reactor ({}.{}) does not match the requested one ({})".format(
@@ -80,4 +83,5 @@ def verify_installed_reactor(reactor_path):
 
 def is_asyncio_reactor_installed():
     from twisted.internet import reactor
+
     return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)

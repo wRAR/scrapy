@@ -9,6 +9,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from w3lib.html import *  # noqa: F401
 
 
-warnings.warn("Module `scrapy.utils.markup` is deprecated. "
-              "Please import from `w3lib.html` instead.",
-              ScrapyDeprecationWarning, stacklevel=2)
+warnings.warn(
+    "Module `scrapy.utils.markup` is deprecated. " "Please import from `w3lib.html` instead.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)

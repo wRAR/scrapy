@@ -17,8 +17,9 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
 
     def _check_components(complist):
         if len({convert(c) for c in complist}) != len(complist):
-            raise ValueError('Some paths in {!r} convert to the same object, '
-                             'please update your settings'.format(complist))
+            raise ValueError(
+                'Some paths in {!r} convert to the same object, ' 'please update your settings'.format(complist)
+            )
 
     def _map_keys(compdict):
         if isinstance(compdict, BaseSettings):
@@ -26,9 +27,11 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
             for k, v in compdict.items():
                 prio = compdict.getpriority(k)
                 if compbs.getpriority(convert(k)) == prio:
-                    raise ValueError('Some paths in {!r} convert to the same '
-                                     'object, please update your settings'
-                                     ''.format(list(compdict.keys())))
+                    raise ValueError(
+                        'Some paths in {!r} convert to the same '
+                        'object, please update your settings'
+                        ''.format(list(compdict.keys()))
+                    )
                 else:
                     compbs.set(convert(k), v, priority=prio)
             return compbs
@@ -40,8 +43,10 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         """Fail if a value in the components dict is not a real number or None."""
         for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
-                raise ValueError('Invalid value {} for component {}, please provide '
-                                 'a real number or None instead'.format(value, name))
+                raise ValueError(
+                    'Invalid value {} for component {}, please provide '
+                    'a real number or None instead'.format(value, name)
+                )
 
     # BEGIN Backward compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
@@ -132,28 +137,32 @@ def feed_process_params_from_cli(settings, output, output_format=None):
     checks for inconsistencies in their quantities and returns a dictionary
     suitable to be used as the FEEDS setting.
     """
-    valid_output_formats = without_none_values(
-        settings.getwithbase('FEED_EXPORTERS')
-    ).keys()
+    valid_output_formats = without_none_values(settings.getwithbase('FEED_EXPORTERS')).keys()
 
     def check_valid_format(output_format):
         if output_format not in valid_output_formats:
-            raise UsageError("Unrecognized output format '%s', set one after a"
-                             " colon using the -o option (i.e. -o <URI>:<FORMAT>)"
-                             " or as a file extension, from the supported list %s" %
-                             (output_format, tuple(valid_output_formats)))
+            raise UsageError(
+                "Unrecognized output format '%s', set one after a"
+                " colon using the -o option (i.e. -o <URI>:<FORMAT>)"
+                " or as a file extension, from the supported list %s" % (output_format, tuple(valid_output_formats))
+            )
 
     if output_format:
         if len(output) == 1:
             check_valid_format(output_format)
-            warnings.warn('The -t command line option is deprecated in favor'
-                          ' of specifying the output format within the -o'
-                          ' option, please check the -o option docs for more details',
-                          category=ScrapyDeprecationWarning, stacklevel=2)
+            warnings.warn(
+                'The -t command line option is deprecated in favor'
+                ' of specifying the output format within the -o'
+                ' option, please check the -o option docs for more details',
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             return {output[0]: {'format': output_format}}
         else:
-            raise UsageError('The -t command line option cannot be used if multiple'
-                             ' output files are specified with the -o option')
+            raise UsageError(
+                'The -t command line option cannot be used if multiple'
+                ' output files are specified with the -o option'
+            )
 
     result = {}
     for element in output:

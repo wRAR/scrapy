@@ -5,7 +5,6 @@ from scrapy.http import Headers
 
 
 class HeadersTest(unittest.TestCase):
-
     def assertSortedEqual(self, first, second, msg=None):
         return self.assertEqual(sorted(first), sorted(second), msg)
 
@@ -20,8 +19,7 @@ class HeadersTest(unittest.TestCase):
 
         self.assertEqual(h.get('Accept', '*/*'), b'*/*')
         self.assertEqual(h.getlist('Accept', '*/*'), [b'*/*'])
-        self.assertEqual(h.getlist('Accept', ['text/html', 'images/jpeg']),
-                         [b'text/html', b'images/jpeg'])
+        self.assertEqual(h.getlist('Accept', ['text/html', 'images/jpeg']), [b'text/html', b'images/jpeg'])
 
     def test_single_value(self):
         h = Headers()
@@ -78,20 +76,14 @@ class HeadersTest(unittest.TestCase):
         idict = {'Content-Type': 'text/html', 'X-Forwarded-For': ['ip1', 'ip2']}
 
         h = Headers(idict)
-        self.assertDictEqual(dict(h),
-                             {b'Content-Type': [b'text/html'],
-                              b'X-Forwarded-For': [b'ip1', b'ip2']})
-        self.assertSortedEqual(h.keys(),
-                               [b'X-Forwarded-For', b'Content-Type'])
-        self.assertSortedEqual(h.items(),
-                               [(b'X-Forwarded-For', [b'ip1', b'ip2']),
-                                (b'Content-Type', [b'text/html'])])
+        self.assertDictEqual(dict(h), {b'Content-Type': [b'text/html'], b'X-Forwarded-For': [b'ip1', b'ip2']})
+        self.assertSortedEqual(h.keys(), [b'X-Forwarded-For', b'Content-Type'])
+        self.assertSortedEqual(h.items(), [(b'X-Forwarded-For', [b'ip1', b'ip2']), (b'Content-Type', [b'text/html'])])
         self.assertSortedEqual(h.values(), [b'ip2', b'text/html'])
 
     def test_update(self):
         h = Headers()
-        h.update({'Content-Type': 'text/html',
-                  'X-Forwarded-For': ['ip1', 'ip2']})
+        h.update({'Content-Type': 'text/html', 'X-Forwarded-For': ['ip1', 'ip2']})
         self.assertEqual(h.getlist('Content-Type'), [b'text/html'])
         self.assertEqual(h.getlist('X-Forwarded-For'), [b'ip1', b'ip2'])
 
@@ -145,11 +137,7 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h1.getlist('hey'), [b'5'])
 
     def test_invalid_value(self):
-        self.assertRaisesRegex(TypeError, 'Unsupported value type',
-                               Headers, {'foo': object()})
-        self.assertRaisesRegex(TypeError, 'Unsupported value type',
-                               Headers().__setitem__, 'foo', object())
-        self.assertRaisesRegex(TypeError, 'Unsupported value type',
-                               Headers().setdefault, 'foo', object())
-        self.assertRaisesRegex(TypeError, 'Unsupported value type',
-                               Headers().setlist, 'foo', [object()])
+        self.assertRaisesRegex(TypeError, 'Unsupported value type', Headers, {'foo': object()})
+        self.assertRaisesRegex(TypeError, 'Unsupported value type', Headers().__setitem__, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type', Headers().setdefault, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type', Headers().setlist, 'foo', [object()])

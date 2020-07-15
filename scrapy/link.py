@@ -32,7 +32,4 @@ class Link:
         return hash(self.url) ^ hash(self.text) ^ hash(self.fragment) ^ hash(self.nofollow)
 
     def __repr__(self):
-        return (
-            'Link(url=%r, text=%r, fragment=%r, nofollow=%r)'
-            % (self.url, self.text, self.fragment, self.nofollow)
-        )
+        return 'Link(url=%r, text=%r, fragment=%r, nofollow=%r)' % (self.url, self.text, self.fragment, self.nofollow)

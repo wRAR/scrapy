@@ -6,7 +6,6 @@ from tests.mockserver import MockServer
 
 
 class TestCloseSpider(TestCase):
-
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()

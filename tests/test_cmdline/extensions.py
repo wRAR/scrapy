@@ -2,7 +2,6 @@
 
 
 class TestExtension:
-
     def __init__(self, settings):
         settings.set('TEST1', "%s + %s" % (settings['TEST1'], 'started'))
 

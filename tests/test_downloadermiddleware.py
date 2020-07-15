@@ -76,27 +76,35 @@ class DefaultsTest(ManagerTestCase):
         """
         req = Request('http://example.com')
         body = b'<p>You are being redirected</p>'
-        resp = Response(req.url, status=302, body=body, headers={
-            'Content-Length': str(len(body)),
-            'Content-Type': 'text/html',
-            'Content-Encoding': 'gzip',
-            'Location': 'http://example.com/login',
-        })
+        resp = Response(
+            req.url,
+            status=302,
+            body=body,
+            headers={
+                'Content-Length': str(len(body)),
+                'Content-Type': 'text/html',
+                'Content-Encoding': 'gzip',
+                'Location': 'http://example.com/login',
+            },
+        )
         ret = self._download(request=req, response=resp)
-        self.assertTrue(isinstance(ret, Request),
-                        "Not redirected: {0!r}".format(ret))
-        self.assertEqual(to_bytes(ret.url), resp.headers['Location'],
-                         "Not redirected to location header")
+        self.assertTrue(isinstance(ret, Request), "Not redirected: {0!r}".format(ret))
+        self.assertEqual(to_bytes(ret.url), resp.headers['Location'], "Not redirected to location header")
 
     def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request('http://example.com')
         body = b'<p>You are being redirected</p>'
-        resp = Response(req.url, status=200, body=body, headers={
-            'Content-Length': str(len(body)),
-            'Content-Type': 'text/html',
-            'Content-Encoding': 'gzip',
-            'Location': 'http://example.com/login',
-        })
+        resp = Response(
+            req.url,
+            status=200,
+            body=body,
+            headers={
+                'Content-Length': str(len(body)),
+                'Content-Type': 'text/html',
+                'Content-Encoding': 'gzip',
+                'Location': 'http://example.com/login',
+            },
+        )
         self.assertRaises(IOError, self._download, request=req, response=resp)
 
 

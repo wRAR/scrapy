@@ -1,13 +1,11 @@
 import unittest
 from unittest import mock
 
-from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
-                             SETTINGS_PRIORITIES, get_settings_priority)
+from scrapy.settings import BaseSettings, Settings, SettingsAttribute, SETTINGS_PRIORITIES, get_settings_priority
 from . import default_settings
 
 
 class SettingsGlobalFuncsTest(unittest.TestCase):
-
     def test_get_settings_priority(self):
         for prio_str, prio_num in SETTINGS_PRIORITIES.items():
             self.assertEqual(get_settings_priority(prio_str), prio_num)
@@ -15,7 +13,6 @@ class SettingsGlobalFuncsTest(unittest.TestCase):
 
 
 class SettingsAttributeTest(unittest.TestCase):
-
     def setUp(self):
         self.attribute = SettingsAttribute('value', 10)
 
@@ -52,12 +49,10 @@ class SettingsAttributeTest(unittest.TestCase):
         self.assertCountEqual(attribute.value, new_settings)
 
     def test_repr(self):
-        self.assertEqual(repr(self.attribute),
-                         "<SettingsAttribute value='value' priority=10>")
+        self.assertEqual(repr(self.attribute), "<SettingsAttribute value='value' priority=10>")
 
 
 class BaseSettingsTest(unittest.TestCase):
-
     def setUp(self):
         self.settings = BaseSettings()
 
@@ -114,12 +109,11 @@ class BaseSettingsTest(unittest.TestCase):
         with mock.patch.object(self.settings, 'set') as mock_set:
             self.settings.setdict({'TEST_1': 'value1', 'TEST_2': 'value2'}, 10)
             self.assertEqual(mock_set.call_count, 2)
-            calls = [mock.call('TEST_1', 'value1', 10),
-                     mock.call('TEST_2', 'value2', 10)]
+            calls = [mock.call('TEST_1', 'value1', 10), mock.call('TEST_2', 'value2', 10)]
             mock_set.assert_has_calls(calls, any_order=True)
 
     def test_setmodule_only_load_uppercase_vars(self):
-        class ModuleMock():
+        class ModuleMock:
             UPPERCASE_VAR = 'value'
             MIXEDcase_VAR = 'othervalue'
             lowercase_var = 'anothervalue'
@@ -143,11 +137,9 @@ class BaseSettingsTest(unittest.TestCase):
         ctrl_attributes = self.settings.attributes.copy()
 
         self.settings.attributes = {}
-        self.settings.setmodule(
-            'tests.test_settings.default_settings', 10)
+        self.settings.setmodule('tests.test_settings.default_settings', 10)
 
-        self.assertCountEqual(self.settings.attributes.keys(),
-                              ctrl_attributes.keys())
+        self.assertCountEqual(self.settings.attributes.keys(), ctrl_attributes.keys())
 
         for key in ctrl_attributes.keys():
             attr = self.settings.attributes[key]
@@ -158,8 +150,7 @@ class BaseSettingsTest(unittest.TestCase):
     def test_update(self):
         settings = BaseSettings({'key_lowprio': 0}, priority=0)
         settings.set('key_highprio', 10, priority=50)
-        custom_settings = BaseSettings({'key_lowprio': 1, 'key_highprio': 11},
-                                       priority=30)
+        custom_settings = BaseSettings({'key_lowprio': 1, 'key_highprio': 11}, priority=30)
         custom_settings.set('newkey_one', None, priority=50)
         custom_dict = {'key_lowprio': 2, 'key_highprio': 12, 'newkey_two': None}
 
@@ -224,8 +215,7 @@ class BaseSettingsTest(unittest.TestCase):
             'TEST_DICT2': '{"key1": "val1", "ke2": 3}',
         }
         settings = self.settings
-        settings.attributes = {key: SettingsAttribute(value, 0) for key, value
-                               in test_configuration.items()}
+        settings.attributes = {key: SettingsAttribute(value, 0) for key, value in test_configuration.items()}
 
         self.assertTrue(settings.getbool('TEST_ENABLED1'))
         self.assertTrue(settings.getbool('TEST_ENABLED2'))
@@ -270,9 +260,13 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getpriority('nonexistentkey'), None)
 
     def test_getwithbase(self):
-        s = BaseSettings({'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
-                          'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
-                          'HASNOBASE': BaseSettings({3: 3000}, 'default')})
+        s = BaseSettings(
+            {
+                'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
+                'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
+                'HASNOBASE': BaseSettings({3: 3000}, 'default'),
+            }
+        )
         s['TEST'].set(2, 200, 'cmdline')
         self.assertCountEqual(s.getwithbase('TEST'), {1: 1, 2: 200, 3: 30})
         self.assertCountEqual(s.getwithbase('HASNOBASE'), s['HASNOBASE'])
@@ -289,8 +283,7 @@ class BaseSettingsTest(unittest.TestCase):
         values = {
             'TEST_BOOL': True,
             'TEST_LIST': ['one', 'two'],
-            'TEST_LIST_OF_LISTS': [['first_one', 'first_two'],
-                                   ['second_one', 'second_two']]
+            'TEST_LIST_OF_LISTS': [['first_one', 'first_two'], ['second_one', 'second_two']],
         }
         self.settings.setdict(values)
         copy = self.settings.copy()
@@ -303,16 +296,19 @@ class BaseSettingsTest(unittest.TestCase):
 
         test_list_of_lists = self.settings.get('TEST_LIST_OF_LISTS')
         test_list_of_lists[0].append('first_three')
-        self.assertListEqual(copy.get('TEST_LIST_OF_LISTS')[0],
-                             ['first_one', 'first_two'])
+        self.assertListEqual(copy.get('TEST_LIST_OF_LISTS')[0], ['first_one', 'first_two'])
 
     def test_copy_to_dict(self):
-        s = BaseSettings({'TEST_STRING': 'a string',
-                          'TEST_LIST': [1, 2],
-                          'TEST_BOOLEAN': False,
-                          'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
-                          'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
-                          'HASNOBASE': BaseSettings({3: 3000}, 'default')})
+        s = BaseSettings(
+            {
+                'TEST_STRING': 'a string',
+                'TEST_LIST': [1, 2],
+                'TEST_BOOLEAN': False,
+                'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
+                'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
+                'HASNOBASE': BaseSettings({3: 3000}, 'default'),
+            }
+        )
         self.assertDictEqual(
             s.copy_to_dict(),
             {
@@ -322,15 +318,14 @@ class BaseSettingsTest(unittest.TestCase):
                 'TEST_LIST': [1, 2],
                 'TEST_BOOLEAN': False,
                 'TEST_STRING': 'a string',
-            }
+            },
         )
 
     def test_freeze(self):
         self.settings.freeze()
         with self.assertRaises(TypeError) as cm:
             self.settings.set('TEST_BOOL', False)
-            self.assertEqual(str(cm.exception),
-                             "Trying to modify an immutable Settings object")
+            self.assertEqual(str(cm.exception), "Trying to modify an immutable Settings object")
 
     def test_frozencopy(self):
         frozencopy = self.settings.frozencopy()
@@ -339,7 +334,6 @@ class BaseSettingsTest(unittest.TestCase):
 
 
 class SettingsTest(unittest.TestCase):
-
     def setUp(self):
         self.settings = Settings()
 

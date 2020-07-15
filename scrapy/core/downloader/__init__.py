@@ -42,15 +42,24 @@ class Slot:
     def __repr__(self):
         cls_name = self.__class__.__name__
         return "%s(concurrency=%r, delay=%0.2f, randomize_delay=%r)" % (
-            cls_name, self.concurrency, self.delay, self.randomize_delay)
+            cls_name,
+            self.concurrency,
+            self.delay,
+            self.randomize_delay,
+        )
 
     def __str__(self):
         return (
             "<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
-            "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>" % (
-                self.concurrency, self.delay, self.randomize_delay,
-                len(self.active), len(self.queue), len(self.transferring),
-                datetime.fromtimestamp(self.lastseen).isoformat()
+            "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>"
+            % (
+                self.concurrency,
+                self.delay,
+                self.randomize_delay,
+                len(self.active),
+                len(self.queue),
+                len(self.transferring),
+                datetime.fromtimestamp(self.lastseen).isoformat(),
             )
         )
 
@@ -124,9 +133,7 @@ class Downloader:
             return response
 
         slot.active.add(request)
-        self.signals.send_catch_log(signal=signals.request_reached_downloader,
-                                    request=request,
-                                    spider=spider)
+        self.signals.send_catch_log(signal=signals.request_reached_downloader, request=request, spider=spider)
         deferred = defer.Deferred().addBoth(_deactivate)
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
@@ -134,6 +141,7 @@ class Downloader:
 
     def _process_queue(self, spider, slot):
         from twisted.internet import reactor
+
         if slot.latercall and slot.latercall.active():
             return
 
@@ -166,11 +174,11 @@ class Downloader:
         # 2. Notify response_downloaded listeners about the recent download
         # before querying queue for next request
         def _downloaded(response):
-            self.signals.send_catch_log(signal=signals.response_downloaded,
-                                        response=response,
-                                        request=request,
-                                        spider=spider)
+            self.signals.send_catch_log(
+                signal=signals.response_downloaded, response=response, request=request, spider=spider
+            )
             return response
+
         dfd.addCallback(_downloaded)
 
         # 3. After response arrives, remove the request from transferring
@@ -182,9 +190,7 @@ class Downloader:
         def finish_transferring(_):
             slot.transferring.remove(request)
             self._process_queue(spider, slot)
-            self.signals.send_catch_log(signal=signals.request_left_downloader,
-                                        request=request,
-                                        spider=spider)
+            self.signals.send_catch_log(signal=signals.request_left_downloader, request=request, spider=spider)
             return _
 
         return dfd.addBoth(finish_transferring)

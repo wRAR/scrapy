@@ -12,7 +12,6 @@ from scrapy.utils.test import get_testenv
 
 
 class CmdlineTest(unittest.TestCase):
-
     def setUp(self):
         self.env = get_testenv()
         self.env['SCRAPY_SETTINGS_MODULE'] = 'tests.test_cmdline.settings'
@@ -28,8 +27,7 @@ class CmdlineTest(unittest.TestCase):
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), 'default')
 
     def test_override_settings_using_set_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s',
-                                       'TEST1=override'), 'override')
+        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), 'override')
 
     def test_override_settings_using_envvar(self):
         self.env['SCRAPY_TEST1'] = 'override'
@@ -46,8 +44,7 @@ class CmdlineTest(unittest.TestCase):
             stats.print_stats()
             out.seek(0)
             stats = out.read()
-            self.assertIn(os.path.join('scrapy', 'commands', 'version.py'),
-                          stats)
+            self.assertIn(os.path.join('scrapy', 'commands', 'version.py'), stats)
             self.assertIn('tottime', stats)
         finally:
             shutil.rmtree(path)
@@ -55,8 +52,7 @@ class CmdlineTest(unittest.TestCase):
     def test_override_dict_settings(self):
         EXT_PATH = "tests.test_cmdline.extensions.DummyExtension"
         EXTENSIONS = {EXT_PATH: 200}
-        settingsstr = self._execute('settings', '--get', 'EXTENSIONS', '-s',
-                                    'EXTENSIONS=' + json.dumps(EXTENSIONS))
+        settingsstr = self._execute('settings', '--get', 'EXTENSIONS', '-s', 'EXTENSIONS=' + json.dumps(EXTENSIONS))
         # XXX: There's gotta be a smarter way to do this...
         self.assertNotIn("...", settingsstr)
         for char in ("'", "<", ">", 'u"'):

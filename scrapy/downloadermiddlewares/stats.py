@@ -5,7 +5,6 @@ from scrapy.utils.python import global_object_name
 
 
 class DownloaderStats:
-
     def __init__(self, stats):
         self.stats = stats
 

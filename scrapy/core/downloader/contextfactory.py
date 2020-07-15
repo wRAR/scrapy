@@ -59,8 +59,9 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         return self.getCertificateOptions().getContext()
 
     def creatorForNetloc(self, hostname, port):
-        return ScrapyClientTLSOptions(hostname.decode("ascii"), self.getContext(),
-                                      verbose_logging=self.tls_verbose_logging)
+        return ScrapyClientTLSOptions(
+            hostname.decode("ascii"), self.getContext(), verbose_logging=self.tls_verbose_logging
+        )
 
 
 @implementer(IPolicyForHTTPS)
@@ -81,6 +82,7 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
     The default OpenSSL method is ``TLS_METHOD`` (also called
     ``SSLv23_METHOD``) which allows TLS protocol negotiation.
     """
+
     def creatorForNetloc(self, hostname, port):
 
         # trustRoot set to platformTrust() will use the platform's root CAs.

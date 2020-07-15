@@ -25,8 +25,14 @@ from zope.interface.verify import verifyObject
 import scrapy
 from scrapy.crawler import CrawlerRunner
 from scrapy.exporters import CsvItemExporter
-from scrapy.extensions.feedexport import (BlockingFeedStorage, FileFeedStorage, FTPFeedStorage,
-                                          IFeedStorage, S3FeedStorage, StdoutFeedStorage)
+from scrapy.extensions.feedexport import (
+    BlockingFeedStorage,
+    FileFeedStorage,
+    FTPFeedStorage,
+    IFeedStorage,
+    S3FeedStorage,
+    StdoutFeedStorage,
+)
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
@@ -35,7 +41,6 @@ from tests.mockserver import MockServer
 
 
 class FileFeedStorageTest(unittest.TestCase):
-
     def test_store_file_uri(self):
         path = os.path.abspath(self.mktemp())
         uri = path_to_file_uri(path)
@@ -75,10 +80,10 @@ class FileFeedStorageTest(unittest.TestCase):
 
 
 class FTPFeedStorageTest(unittest.TestCase):
-
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
             name = 'test_spider'
+
         crawler = get_crawler(settings_dict=settings)
         spider = TestSpider.from_crawler(crawler)
         return spider
@@ -128,10 +133,10 @@ class FTPFeedStorageTest(unittest.TestCase):
 
 
 class BlockingFeedStorageTest(unittest.TestCase):
-
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
             name = 'test_spider'
+
         crawler = get_crawler(settings_dict=settings)
         spider = TestSpider.from_crawler(crawler)
         return spider
@@ -163,34 +168,34 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 
 class S3FeedStorageTest(unittest.TestCase):
-
-    @mock.patch('scrapy.utils.project.get_project_settings',
-                new=mock.MagicMock(return_value={'AWS_ACCESS_KEY_ID': 'conf_key',
-                                                 'AWS_SECRET_ACCESS_KEY': 'conf_secret'}),
-                create=True)
+    @mock.patch(
+        'scrapy.utils.project.get_project_settings',
+        new=mock.MagicMock(return_value={'AWS_ACCESS_KEY_ID': 'conf_key', 'AWS_SECRET_ACCESS_KEY': 'conf_secret'}),
+        create=True,
+    )
     def test_parse_credentials(self):
         try:
             import boto  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("S3FeedStorage requires boto")
-        aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
-                           'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
+        aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key', 'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
         crawler = get_crawler(settings_dict=aws_credentials)
         # Instantiate with crawler
-        storage = S3FeedStorage.from_crawler(crawler,
-                                             's3://mybucket/export.csv')
+        storage = S3FeedStorage.from_crawler(crawler, 's3://mybucket/export.csv')
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
         # Instantiate directly
-        storage = S3FeedStorage('s3://mybucket/export.csv',
-                                aws_credentials['AWS_ACCESS_KEY_ID'],
-                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv', aws_credentials['AWS_ACCESS_KEY_ID'], aws_credentials['AWS_SECRET_ACCESS_KEY']
+        )
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
         # URI priority > settings priority
-        storage = S3FeedStorage('s3://uri_key:uri_secret@mybucket/export.csv',
-                                aws_credentials['AWS_ACCESS_KEY_ID'],
-                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+        storage = S3FeedStorage(
+            's3://uri_key:uri_secret@mybucket/export.csv',
+            aws_credentials['AWS_ACCESS_KEY_ID'],
+            aws_credentials['AWS_SECRET_ACCESS_KEY'],
+        )
         self.assertEqual(storage.access_key, 'uri_key')
         self.assertEqual(storage.secret_key, 'uri_secret')
         # Backward compatibility for initialising without settings
@@ -219,22 +224,13 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(content, expected_content)
 
     def test_init_without_acl(self):
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key'
-        )
+        storage = S3FeedStorage('s3://mybucket/export.csv', 'access_key', 'secret_key')
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
 
     def test_init_with_acl(self):
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key',
-            'custom-acl'
-        )
+        storage = S3FeedStorage('s3://mybucket/export.csv', 'access_key', 'secret_key', 'custom-acl')
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
@@ -245,10 +241,7 @@ class S3FeedStorageTest(unittest.TestCase):
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
-            crawler,
-            's3://mybucket/export.csv'
-        )
+        storage = S3FeedStorage.from_crawler(crawler, 's3://mybucket/export.csv')
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
@@ -260,10 +253,7 @@ class S3FeedStorageTest(unittest.TestCase):
             'FEED_STORAGE_S3_ACL': 'custom-acl',
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
-            crawler,
-            's3://mybucket/export.csv'
-        )
+        storage = S3FeedStorage.from_crawler(crawler, 's3://mybucket/export.csv')
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
@@ -275,11 +265,7 @@ class S3FeedStorageTest(unittest.TestCase):
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key',
-        )
+        storage = S3FeedStorage('s3://mybucket/export.csv', 'access_key', 'secret_key',)
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
@@ -295,30 +281,18 @@ class S3FeedStorageTest(unittest.TestCase):
         except ImportError:
             raise unittest.SkipTest('botocore is required')
 
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key',
-            'custom-acl'
-        )
+        storage = S3FeedStorage('s3://mybucket/export.csv', 'access_key', 'secret_key', 'custom-acl')
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b'test file'))
-        self.assertEqual(
-            storage.s3_client.put_object.call_args[1].get('ACL'),
-            'custom-acl'
-        )
+        self.assertEqual(storage.s3_client.put_object.call_args[1].get('ACL'), 'custom-acl')
 
     @defer.inlineCallbacks
     def test_store_not_botocore_without_acl(self):
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key',
-        )
+        storage = S3FeedStorage('s3://mybucket/export.csv', 'access_key', 'secret_key',)
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
@@ -332,19 +306,11 @@ class S3FeedStorageTest(unittest.TestCase):
         conn = storage.connect_s3(*storage.connect_s3.call_args)
         bucket = conn.get_bucket(*conn.get_bucket.call_args)
         key = bucket.new_key(*bucket.new_key.call_args)
-        self.assertNotIn(
-            dict(policy='custom-acl'),
-            key.set_contents_from_file.call_args
-        )
+        self.assertNotIn(dict(policy='custom-acl'), key.set_contents_from_file.call_args)
 
     @defer.inlineCallbacks
     def test_store_not_botocore_with_acl(self):
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key',
-            'custom-acl'
-        )
+        storage = S3FeedStorage('s3://mybucket/export.csv', 'access_key', 'secret_key', 'custom-acl')
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
@@ -358,14 +324,10 @@ class S3FeedStorageTest(unittest.TestCase):
         conn = storage.connect_s3(*storage.connect_s3.call_args)
         bucket = conn.get_bucket(*conn.get_bucket.call_args)
         key = bucket.new_key(*bucket.new_key.call_args)
-        self.assertIn(
-            dict(policy='custom-acl'),
-            key.set_contents_from_file.call_args
-        )
+        self.assertIn(dict(policy='custom-acl'), key.set_contents_from_file.call_args)
 
 
 class StdoutFeedStorageTest(unittest.TestCase):
-
     @defer.inlineCallbacks
     def test_store(self):
         out = BytesIO()
@@ -394,7 +356,6 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
 
 
 class DummyBlockingFeedStorage(BlockingFeedStorage):
-
     def __init__(self, uri):
         self.path = file_uri_to_path(uri)
 
@@ -409,7 +370,6 @@ class DummyBlockingFeedStorage(BlockingFeedStorage):
 
 
 class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
-
     def _store_in_thread(self, file):
         raise OSError('Cannot store')
 
@@ -434,7 +394,6 @@ class LogOnStoreFileStorage:
 
 
 class FeedExportTest(unittest.TestCase):
-
     class MyItem(scrapy.Item):
         foo = scrapy.Field()
         egg = scrapy.Field()
@@ -456,10 +415,7 @@ class FeedExportTest(unittest.TestCase):
         """ Run spider with specified settings; return exported data. """
 
         FEEDS = settings.get('FEEDS') or {}
-        settings['FEEDS'] = {
-            urljoin('file:', pathname2url(str(file_path))): feed
-            for file_path, feed in FEEDS.items()
-        }
+        settings['FEEDS'] = {urljoin('file:', pathname2url(str(file_path))): feed for file_path, feed in FEEDS.items()}
 
         content = {}
         try:
@@ -489,6 +445,7 @@ class FeedExportTest(unittest.TestCase):
         """
         Return exported data which a spider yielding ``items`` would return.
         """
+
         class TestSpider(scrapy.Spider):
             name = 'testspider'
 
@@ -504,6 +461,7 @@ class FeedExportTest(unittest.TestCase):
         """
         Return exported data which a spider yielding no ``items`` would return.
         """
+
         class TestSpider(scrapy.Spider):
             name = 'testspider'
 
@@ -516,11 +474,9 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
         settings = settings or {}
-        settings.update({
-            'FEEDS': {
-                self._random_temp_filename(): {'format': 'csv'},
-            },
-        })
+        settings.update(
+            {'FEEDS': {self._random_temp_filename(): {'format': 'csv'},},}
+        )
         data = yield self.exported_data(items, settings)
 
         reader = csv.DictReader(to_unicode(data['csv']).splitlines())
@@ -535,11 +491,9 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({
-            'FEEDS': {
-                self._random_temp_filename(): {'format': 'jl'},
-            },
-        })
+        settings.update(
+            {'FEEDS': {self._random_temp_filename(): {'format': 'jl'},},}
+        )
         data = yield self.exported_data(items, settings)
         parsed = [json.loads(to_unicode(line)) for line in data['jl'].splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
@@ -548,11 +502,9 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def assertExportedXml(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({
-            'FEEDS': {
-                self._random_temp_filename(): {'format': 'xml'},
-            },
-        })
+        settings.update(
+            {'FEEDS': {self._random_temp_filename(): {'format': 'xml'},},}
+        )
         data = yield self.exported_data(items, settings)
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         root = lxml.etree.fromstring(data['xml'])
@@ -562,12 +514,14 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def assertExportedMultiple(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({
-            'FEEDS': {
-                self._random_temp_filename(): {'format': 'xml'},
-                self._random_temp_filename(): {'format': 'json'},
-            },
-        })
+        settings.update(
+            {
+                'FEEDS': {
+                    self._random_temp_filename(): {'format': 'xml'},
+                    self._random_temp_filename(): {'format': 'json'},
+                },
+            }
+        )
         data = yield self.exported_data(items, settings)
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         # XML
@@ -593,28 +547,26 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def assertExportedPickle(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({
-            'FEEDS': {
-                self._random_temp_filename(): {'format': 'pickle'},
-            },
-        })
+        settings.update(
+            {'FEEDS': {self._random_temp_filename(): {'format': 'pickle'},},}
+        )
         data = yield self.exported_data(items, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
         import pickle
+
         result = self._load_until_eof(data['pickle'], load_func=pickle.load)
         self.assertEqual(expected, result)
 
     @defer.inlineCallbacks
     def assertExportedMarshal(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({
-            'FEEDS': {
-                self._random_temp_filename(): {'format': 'marshal'},
-            },
-        })
+        settings.update(
+            {'FEEDS': {self._random_temp_filename(): {'format': 'marshal'},},}
+        )
         data = yield self.exported_data(items, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
         import marshal
+
         result = self._load_until_eof(data['marshal'], load_func=marshal.load)
         self.assertEqual(expected, result)
 
@@ -634,10 +586,7 @@ class FeedExportTest(unittest.TestCase):
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
         ]
-        rows = [
-            {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
-            {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'}
-        ]
+        rows = [{'egg': 'spam1', 'foo': 'bar1', 'baz': ''}, {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'}]
         header = self.MyItem.fields.keys()
         yield self.assertExported(items, header, rows, ordered=False)
 
@@ -645,9 +594,7 @@ class FeedExportTest(unittest.TestCase):
     def test_export_no_items_not_store_empty(self):
         for fmt in ('json', 'jsonlines', 'xml', 'csv'):
             settings = {
-                'FEEDS': {
-                    self._random_temp_filename(): {'format': fmt},
-                },
+                'FEEDS': {self._random_temp_filename(): {'format': fmt},},
             }
             data = yield self.exported_no_data(settings)
             self.assertEqual(data[fmt], b'')
@@ -663,9 +610,7 @@ class FeedExportTest(unittest.TestCase):
 
         for fmt, expctd in formats:
             settings = {
-                'FEEDS': {
-                    self._random_temp_filename(): {'format': fmt},
-                },
+                'FEEDS': {self._random_temp_filename(): {'format': fmt},},
                 'FEED_STORE_EMPTY': True,
                 'FEED_EXPORT_INDENT': None,
             }
@@ -682,7 +627,7 @@ class FeedExportTest(unittest.TestCase):
                 self._random_temp_filename(): {'format': 'csv'},
             },
             'FEED_STORAGES': {'file': 'tests.test_feedexport.LogOnStoreFileStorage'},
-            'FEED_STORE_EMPTY': False
+            'FEED_STORE_EMPTY': False,
         }
 
         with LogCapture() as log:
@@ -693,7 +638,6 @@ class FeedExportTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
-
         class MyItem2(scrapy.Item):
             foo = scrapy.Field()
             hello = scrapy.Field()
@@ -732,8 +676,7 @@ class FeedExportTest(unittest.TestCase):
             {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
             {'foo': '', 'baz': '', 'hello': 'world4'},
         ]
-        yield self.assertExported(items, header, rows,
-                                  settings=settings, ordered=True)
+        yield self.assertExported(items, header, rows, settings=settings, ordered=True)
 
     @defer.inlineCallbacks
     def test_export_dicts(self):
@@ -743,10 +686,7 @@ class FeedExportTest(unittest.TestCase):
             {'foo': 'bar', 'egg': 'spam'},
             {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
         ]
-        rows_csv = [
-            {'egg': 'spam', 'foo': 'bar'},
-            {'egg': 'spam', 'foo': 'bar'}
-        ]
+        rows_csv = [{'egg': 'spam', 'foo': 'bar'}, {'egg': 'spam', 'foo': 'bar'}]
         rows_jl = items
         yield self.assertExportedCsv(items, ['egg', 'foo'], rows_csv, ordered=False)
         yield self.assertExportedJsonLines(items, rows_jl)
@@ -764,21 +704,13 @@ class FeedExportTest(unittest.TestCase):
 
             # export all columns
             settings = {'FEED_EXPORT_FIELDS': 'foo,baz,egg'}
-            rows = [
-                {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
-                {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'}
-            ]
-            yield self.assertExported(items, ['foo', 'baz', 'egg'], rows,
-                                      settings=settings, ordered=True)
+            rows = [{'egg': 'spam1', 'foo': 'bar1', 'baz': ''}, {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'}]
+            yield self.assertExported(items, ['foo', 'baz', 'egg'], rows, settings=settings, ordered=True)
 
             # export a subset of columns
             settings = {'FEED_EXPORT_FIELDS': 'egg,baz'}
-            rows = [
-                {'egg': 'spam1', 'baz': ''},
-                {'egg': 'spam2', 'baz': 'quux2'}
-            ]
-            yield self.assertExported(items, ['egg', 'baz'], rows,
-                                      settings=settings, ordered=True)
+            rows = [{'egg': 'spam1', 'baz': ''}, {'egg': 'spam2', 'baz': 'quux2'}]
+            yield self.assertExported(items, ['egg', 'baz'], rows, settings=settings, ordered=True)
 
     @defer.inlineCallbacks
     def test_export_encoding(self):
@@ -788,17 +720,14 @@ class FeedExportTest(unittest.TestCase):
             'json': '[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
             'jsonlines': '{"foo": "Test\\u00d6"}\n'.encode('utf-8'),
             'xml': (
-                '<?xml version="1.0" encoding="utf-8"?>\n'
-                '<items><item><foo>Test\xd6</foo></item></items>'
+                '<?xml version="1.0" encoding="utf-8"?>\n' '<items><item><foo>Test\xd6</foo></item></items>'
             ).encode('utf-8'),
             'csv': 'foo\r\nTest\xd6\r\n'.encode('utf-8'),
         }
 
         for fmt, expected in formats.items():
             settings = {
-                'FEEDS': {
-                    self._random_temp_filename(): {'format': fmt},
-                },
+                'FEEDS': {self._random_temp_filename(): {'format': fmt},},
                 'FEED_EXPORT_INDENT': None,
             }
             data = yield self.exported_data(items, settings)
@@ -808,17 +737,14 @@ class FeedExportTest(unittest.TestCase):
             'json': '[{"foo": "Test\xd6"}]'.encode('latin-1'),
             'jsonlines': '{"foo": "Test\xd6"}\n'.encode('latin-1'),
             'xml': (
-                '<?xml version="1.0" encoding="latin-1"?>\n'
-                '<items><item><foo>Test\xd6</foo></item></items>'
+                '<?xml version="1.0" encoding="latin-1"?>\n' '<items><item><foo>Test\xd6</foo></item></items>'
             ).encode('latin-1'),
             'csv': 'foo\r\nTest\xd6\r\n'.encode('latin-1'),
         }
 
         for fmt, expected in formats.items():
             settings = {
-                'FEEDS': {
-                    self._random_temp_filename(): {'format': fmt},
-                },
+                'FEEDS': {self._random_temp_filename(): {'format': fmt},},
                 'FEED_EXPORT_INDENT': None,
                 'FEED_EXPORT_ENCODING': 'latin-1',
             }
@@ -840,12 +766,7 @@ class FeedExportTest(unittest.TestCase):
 
         settings = {
             'FEEDS': {
-                self._random_temp_filename(): {
-                    'format': 'json',
-                    'indent': 0,
-                    'fields': ['bar'],
-                    'encoding': 'utf-8',
-                },
+                self._random_temp_filename(): {'format': 'json', 'indent': 0, 'fields': ['bar'], 'encoding': 'utf-8',},
                 self._random_temp_filename(): {
                     'format': 'xml',
                     'indent': 2,
@@ -874,11 +795,7 @@ class FeedExportTest(unittest.TestCase):
 
         test_cases = [
             # JSON
-            {
-                'format': 'json',
-                'indent': None,
-                'expected': b'[{"foo": ["bar"]},{"key": "value"}]',
-            },
+            {'format': 'json', 'indent': None, 'expected': b'[{"foo": ["bar"]},{"key": "value"}]',},
             {
                 'format': 'json',
                 'indent': -1,
@@ -937,7 +854,6 @@ class FeedExportTest(unittest.TestCase):
 }
 ]""",
             },
-
             # XML
             {
                 'format': 'xml',
@@ -1012,12 +928,7 @@ class FeedExportTest(unittest.TestCase):
 
         for row in test_cases:
             settings = {
-                'FEEDS': {
-                    self._random_temp_filename(): {
-                        'format': row['format'],
-                        'indent': row['indent'],
-                    },
-                },
+                'FEEDS': {self._random_temp_filename(): {'format': row['format'], 'indent': row['indent'],},},
             }
             data = yield self.exported_data(items, settings)
             self.assertEqual(row['expected'], data[row['format']])
@@ -1027,9 +938,7 @@ class FeedExportTest(unittest.TestCase):
         settings = {
             'FEED_EXPORTERS': {'csv': 'tests.test_feedexport.FromCrawlerCsvItemExporter'},
             'FEED_STORAGES': {'file': 'tests.test_feedexport.FromCrawlerFileFeedStorage'},
-            'FEEDS': {
-                self._random_temp_filename(): {'format': 'csv'},
-            },
+            'FEEDS': {self._random_temp_filename(): {'format': 'csv'},},
         }
         yield self.exported_data(items=[], settings=settings)
         self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
@@ -1040,9 +949,7 @@ class FeedExportTest(unittest.TestCase):
         feed_path = Path(self._random_temp_filename())
         settings = {
             'FEED_STORE_EMPTY': True,
-            'FEEDS': {
-                feed_path: {'format': 'csv'}
-            },
+            'FEEDS': {feed_path: {'format': 'csv'}},
         }
         data = yield self.exported_no_data(settings)
         self.assertEqual(data['csv'], b'')

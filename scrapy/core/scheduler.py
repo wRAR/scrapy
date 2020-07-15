@@ -39,8 +39,18 @@ class Scheduler:
     (in-memory and on-disk) and implements fallback logic for them.
     Also, it handles dupefilters.
     """
-    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
-                 logunser=False, stats=None, pqclass=None, crawler=None):
+
+    def __init__(
+        self,
+        dupefilter,
+        jobdir=None,
+        dqclass=None,
+        mqclass=None,
+        logunser=False,
+        stats=None,
+        pqclass=None,
+        crawler=None,
+    ):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.pqclass = pqclass
@@ -57,19 +67,29 @@ class Scheduler:
         dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
         if pqclass is PriorityQueue:
-            warnings.warn("SCHEDULER_PRIORITY_QUEUE='queuelib.PriorityQueue'"
-                          " is no longer supported because of API changes; "
-                          "please use 'scrapy.pqueues.ScrapyPriorityQueue'",
-                          ScrapyDeprecationWarning)
+            warnings.warn(
+                "SCHEDULER_PRIORITY_QUEUE='queuelib.PriorityQueue'"
+                " is no longer supported because of API changes; "
+                "please use 'scrapy.pqueues.ScrapyPriorityQueue'",
+                ScrapyDeprecationWarning,
+            )
             from scrapy.pqueues import ScrapyPriorityQueue
+
             pqclass = ScrapyPriorityQueue
 
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')
-        return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
-                   stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
-                   mqclass=mqclass, crawler=crawler)
+        return cls(
+            dupefilter,
+            jobdir=job_dir(settings),
+            logunser=logunser,
+            stats=crawler.stats,
+            pqclass=pqclass,
+            dqclass=dqclass,
+            mqclass=mqclass,
+            crawler=crawler,
+        )
 
     def has_pending_requests(self):
         return len(self) > 0
@@ -121,14 +141,14 @@ class Scheduler:
             self.dqs.push(request)
         except ValueError as e:  # non serializable request
             if self.logunser:
-                msg = ("Unable to serialize request: %(request)s - reason:"
-                       " %(reason)s - no more unserializable requests will be"
-                       " logged (stats being collected)")
-                logger.warning(msg, {'request': request, 'reason': e},
-                               exc_info=True, extra={'spider': self.spider})
+                msg = (
+                    "Unable to serialize request: %(request)s - reason:"
+                    " %(reason)s - no more unserializable requests will be"
+                    " logged (stats being collected)"
+                )
+                logger.warning(msg, {'request': request, 'reason': e}, exc_info=True, extra={'spider': self.spider})
                 self.logunser = False
-            self.stats.inc_value('scheduler/unserializable',
-                                 spider=self.spider)
+            self.stats.inc_value('scheduler/unserializable', spider=self.spider)
             return
         else:
             return True
@@ -142,24 +162,27 @@ class Scheduler:
 
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
-        return create_instance(self.pqclass,
-                               settings=None,
-                               crawler=self.crawler,
-                               downstream_queue_cls=self.mqclass,
-                               key='')
+        return create_instance(
+            self.pqclass, settings=None, crawler=self.crawler, downstream_queue_cls=self.mqclass, key=''
+        )
 
     def _dq(self):
         """ Create a new priority queue instance, with disk storage """
         state = self._read_dqs_state(self.dqdir)
-        q = create_instance(self.pqclass,
-                            settings=None,
-                            crawler=self.crawler,
-                            downstream_queue_cls=self.dqclass,
-                            key=self.dqdir,
-                            startprios=state)
+        q = create_instance(
+            self.pqclass,
+            settings=None,
+            crawler=self.crawler,
+            downstream_queue_cls=self.dqclass,
+            key=self.dqdir,
+            startprios=state,
+        )
         if q:
-            logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
-                        {'queuesize': len(q)}, extra={'spider': self.spider})
+            logger.info(
+                "Resuming crawl (%(queuesize)d requests scheduled)",
+                {'queuesize': len(q)},
+                extra={'spider': self.spider},
+            )
         return q
 
     def _dqdir(self, jobdir):

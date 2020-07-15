@@ -9,6 +9,7 @@ import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
 from twisted.internet import reactor, defer
+
 try:
     from twisted.internet.testing import StringTransport
 except ImportError:
@@ -38,18 +39,17 @@ from tests.mockserver import ssl_context_factory
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     """Adapted version of twisted.web.client.getPage"""
+
     def _clientfactory(url, *args, **kwargs):
         url = to_unicode(url)
         timeout = kwargs.pop('timeout', 0)
-        f = client.ScrapyHTTPClientFactory(
-            Request(url, *args, **kwargs), timeout=timeout)
+        f = client.ScrapyHTTPClientFactory(Request(url, *args, **kwargs), timeout=timeout)
         f.deferred.addCallback(response_transform or (lambda r: r.body))
         return f
 
     from twisted.web.client import _makeGetterFactory
-    return _makeGetterFactory(
-        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs
-    ).deferred
+
+    return _makeGetterFactory(to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs).deferred
 
 
 class ParseUrlTestCase(unittest.TestCase):
@@ -68,7 +68,6 @@ class ParseUrlTestCase(unittest.TestCase):
             ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
             ("http://127.0.0.1:100/?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
             ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/foo?c=v&c2=v2')),
-
             ("http://127.0.0.1", ('http', lip, lip, 80, '/')),
             ("http://127.0.0.1/", ('http', lip, lip, 80, '/')),
             ("http://127.0.0.1/foo", ('http', lip, lip, 80, '/foo')),
@@ -77,34 +76,34 @@ class ParseUrlTestCase(unittest.TestCase):
             ("http://127.0.0.1:12345/foo", ('http', lip + ':12345', lip, 12345, '/foo')),
             ("http://spam:12345/foo", ('http', 'spam:12345', 'spam', 12345, '/foo')),
             ("http://spam.test.org/foo", ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
-
             ("https://127.0.0.1/foo", ('https', lip, lip, 443, '/foo')),
             ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
             ("https://127.0.0.1:12345/", ('https', lip + ':12345', lip, 12345, '/')),
-
             ("http://scrapytest.org/foo ", ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
             ("http://egg:7890 ", ('http', 'egg:7890', 'egg', 7890, '/')),
         )
 
         for url, test in tests:
-            test = tuple(
-                to_bytes(x) if not isinstance(x, int) else x for x in test)
+            test = tuple(to_bytes(x) if not isinstance(x, int) else x for x in test)
             self.assertEqual(client._parse(url), test, url)
 
 
 class ScrapyHTTPPageGetterTests(unittest.TestCase):
-
     def test_earlyHeaders(self):
         # basic test stolen from twisted HTTPageGetter
-        factory = client.ScrapyHTTPClientFactory(Request(
-            url='http://foo/bar',
-            body="some data",
-            headers={
-                'Host': 'example.net',
-                'User-Agent': 'fooble',
-                'Cookie': 'blah blah',
-                'Content-Length': '12981',
-                'Useful': 'value'}))
+        factory = client.ScrapyHTTPClientFactory(
+            Request(
+                url='http://foo/bar',
+                body="some data",
+                headers={
+                    'Host': 'example.net',
+                    'User-Agent': 'fooble',
+                    'Cookie': 'blah blah',
+                    'Content-Length': '12981',
+                    'Useful': 'value',
+                },
+            )
+        )
 
         self._test(
             factory,
@@ -116,22 +115,22 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             b"Host: example.net\r\n"
             b"Cookie: blah blah\r\n"
             b"\r\n"
-            b"some data")
+            b"some data",
+        )
 
         # test minimal sent headers
         factory = client.ScrapyHTTPClientFactory(Request('http://foo/bar'))
-        self._test(
-            factory,
-            b"GET /bar HTTP/1.0\r\n"
-            b"Host: foo\r\n"
-            b"\r\n")
+        self._test(factory, b"GET /bar HTTP/1.0\r\n" b"Host: foo\r\n" b"\r\n")
 
         # test a simple POST with body and content-type
-        factory = client.ScrapyHTTPClientFactory(Request(
-            method='POST',
-            url='http://foo/bar',
-            body='name=value',
-            headers={'Content-Type': 'application/x-www-form-urlencoded'}))
+        factory = client.ScrapyHTTPClientFactory(
+            Request(
+                method='POST',
+                url='http://foo/bar',
+                body='name=value',
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+            )
+        )
 
         self._test(
             factory,
@@ -141,29 +140,20 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             b"Content-Type: application/x-www-form-urlencoded\r\n"
             b"Content-Length: 10\r\n"
             b"\r\n"
-            b"name=value")
+            b"name=value",
+        )
 
         # test a POST method with no body provided
-        factory = client.ScrapyHTTPClientFactory(Request(
-            method='POST',
-            url='http://foo/bar'
-        ))
+        factory = client.ScrapyHTTPClientFactory(Request(method='POST', url='http://foo/bar'))
 
-        self._test(
-            factory,
-            b"POST /bar HTTP/1.0\r\n"
-            b"Host: foo\r\n"
-            b"Content-Length: 0\r\n"
-            b"\r\n")
+        self._test(factory, b"POST /bar HTTP/1.0\r\n" b"Host: foo\r\n" b"Content-Length: 0\r\n" b"\r\n")
 
         # test with single and multivalued headers
-        factory = client.ScrapyHTTPClientFactory(Request(
-            url='http://foo/bar',
-            headers={
-                'X-Meta-Single': 'single',
-                'X-Meta-Multivalued': ['value1', 'value2'],
-            },
-        ))
+        factory = client.ScrapyHTTPClientFactory(
+            Request(
+                url='http://foo/bar', headers={'X-Meta-Single': 'single', 'X-Meta-Multivalued': ['value1', 'value2'],},
+            )
+        )
 
         self._test(
             factory,
@@ -172,16 +162,16 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             b"X-Meta-Multivalued: value1\r\n"
             b"X-Meta-Multivalued: value2\r\n"
             b"X-Meta-Single: single\r\n"
-            b"\r\n")
+            b"\r\n",
+        )
 
         # same test with single and multivalued headers but using Headers class
-        factory = client.ScrapyHTTPClientFactory(Request(
-            url='http://foo/bar',
-            headers=Headers({
-                'X-Meta-Single': 'single',
-                'X-Meta-Multivalued': ['value1', 'value2'],
-            }),
-        ))
+        factory = client.ScrapyHTTPClientFactory(
+            Request(
+                url='http://foo/bar',
+                headers=Headers({'X-Meta-Single': 'single', 'X-Meta-Multivalued': ['value1', 'value2'],}),
+            )
+        )
 
         self._test(
             factory,
@@ -190,22 +180,20 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             b"X-Meta-Multivalued: value1\r\n"
             b"X-Meta-Multivalued: value2\r\n"
             b"X-Meta-Single: single\r\n"
-            b"\r\n")
+            b"\r\n",
+        )
 
     def _test(self, factory, testvalue):
         transport = StringTransport()
         protocol = client.ScrapyHTTPPageGetter()
         protocol.factory = factory
         protocol.makeConnection(transport)
-        self.assertEqual(
-            set(transport.value().splitlines()),
-            set(testvalue.splitlines()))
+        self.assertEqual(set(transport.value().splitlines()), set(testvalue.splitlines()))
         return testvalue
 
     def test_non_standard_line_endings(self):
         # regression test for: http://dev.scrapy.org/ticket/258
-        factory = client.ScrapyHTTPClientFactory(Request(
-            url='http://foo/bar'))
+        factory = client.ScrapyHTTPClientFactory(Request(url='http://foo/bar'))
         protocol = client.ScrapyHTTPPageGetter()
         protocol.factory = factory
         protocol.headers = Headers()
@@ -257,17 +245,19 @@ class WebClientTestCase(unittest.TestCase):
 
     def testPayload(self):
         s = "0123456789" * 10
-        return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s))
+        return getPage(self.getURL("payload"), body=s).addCallback(self.assertEqual, to_bytes(s))
 
     def testHostHeader(self):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
-        return defer.gatherResults([
-            getPage(self.getURL("host")).addCallback(
-                self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno)),
-            getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
-                self.assertEqual, to_bytes("www.example.com"))])
+        return defer.gatherResults(
+            [
+                getPage(self.getURL("host")).addCallback(self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno)),
+                getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
+                    self.assertEqual, to_bytes("www.example.com")
+                ),
+            ]
+        )
 
     def test_getPage(self):
         """
@@ -284,11 +274,13 @@ class WebClientTestCase(unittest.TestCase):
         the empty string if the method is C{HEAD} and there is a successful
         response code.
         """
+
         def _getPage(method):
             return getPage(self.getURL("file"), method=method)
-        return defer.gatherResults([
-            _getPage("head").addCallback(self.assertEqual, b""),
-            _getPage("HEAD").addCallback(self.assertEqual, b"")])
+
+        return defer.gatherResults(
+            [_getPage("head").addCallback(self.assertEqual, b""), _getPage("HEAD").addCallback(self.assertEqual, b"")]
+        )
 
     def test_timeoutNotTriggering(self):
         """
@@ -297,8 +289,7 @@ class WebClientTestCase(unittest.TestCase):
         called back with the contents of the page.
         """
         d = getPage(self.getURL("host"), timeout=100)
-        d.addCallback(
-            self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno))
+        d.addCallback(self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno))
         return d
 
     def test_timeoutTriggering(self):
@@ -307,9 +298,7 @@ class WebClientTestCase(unittest.TestCase):
         seconds elapse before the server responds to the request. the
         L{Deferred} is errbacked with a L{error.TimeoutError}.
         """
-        finished = self.assertFailure(
-            getPage(self.getURL("wait"), timeout=0.000001),
-            defer.TimeoutError)
+        finished = self.assertFailure(getPage(self.getURL("wait"), timeout=0.000001), defer.TimeoutError)
 
         def cleanup(passthrough):
             # Clean up the server which is hanging around not doing
@@ -320,6 +309,7 @@ class WebClientTestCase(unittest.TestCase):
             if connected:
                 connected[0].transport.loseConnection()
             return passthrough
+
         finished.addBoth(cleanup)
         return finished
 
@@ -350,7 +340,8 @@ class WebClientTestCase(unittest.TestCase):
             pageData,
             b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
             b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
-            b'<a href="/file">click here</a>\n    </body>\n</html>\n')
+            b'<a href="/file">click here</a>\n    </body>\n</html>\n',
+        )
 
     def test_encoding(self):
         """ Test that non-standart body encoding matches
@@ -362,8 +353,7 @@ class WebClientTestCase(unittest.TestCase):
     def _check_Encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b'Content-Encoding'])
         self.assertEqual(content_encoding, EncodingResource.out_encoding)
-        self.assertEqual(
-            response.body.decode(content_encoding), to_unicode(original_body))
+        self.assertEqual(response.body.decode(content_encoding), to_unicode(original_body))
 
 
 class WebClientSSLTestCase(unittest.TestCase):
@@ -371,9 +361,8 @@ class WebClientSSLTestCase(unittest.TestCase):
 
     def _listen(self, site):
         return reactor.listenSSL(
-            0, site,
-            contextFactory=self.context_factory or ssl_context_factory(),
-            interface="127.0.0.1")
+            0, site, contextFactory=self.context_factory or ssl_context_factory(), interface="127.0.0.1"
+        )
 
     def getURL(self, path):
         return "https://127.0.0.1:%d/%s" % (self.portno, path)
@@ -396,8 +385,7 @@ class WebClientSSLTestCase(unittest.TestCase):
 
     def testPayload(self):
         s = "0123456789" * 10
-        return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s))
+        return getPage(self.getURL("payload"), body=s).addCallback(self.assertEqual, to_bytes(s))
 
 
 class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
@@ -409,9 +397,9 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         s = "0123456789" * 10
         settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': self.custom_ciphers})
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
-        return getPage(
-            self.getURL("payload"), body=s, contextFactory=client_context_factory
-        ).addCallback(self.assertEqual, to_bytes(s))
+        return getPage(self.getURL("payload"), body=s, contextFactory=client_context_factory).addCallback(
+            self.assertEqual, to_bytes(s)
+        )
 
     def testPayloadDefaultCiphers(self):
         s = "0123456789" * 10

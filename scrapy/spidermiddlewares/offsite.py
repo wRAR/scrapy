@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class OffsiteMiddleware:
-
     def __init__(self, stats):
         self.stats = stats
 
@@ -36,7 +35,9 @@ class OffsiteMiddleware:
                         self.domains_seen.add(domain)
                         logger.debug(
                             "Filtered offsite request to %(domain)r: %(request)s",
-                            {'domain': domain, 'request': x}, extra={'spider': spider})
+                            {'domain': domain, 'request': x},
+                            extra={'spider': spider},
+                        )
                         self.stats.inc_value('offsite/domains', spider=spider)
                     self.stats.inc_value('offsite/filtered', spider=spider)
             else:
@@ -60,12 +61,16 @@ class OffsiteMiddleware:
             if domain is None:
                 continue
             elif url_pattern.match(domain):
-                message = ("allowed_domains accepts only domains, not URLs. "
-                           "Ignoring URL entry %s in allowed_domains." % domain)
+                message = (
+                    "allowed_domains accepts only domains, not URLs. "
+                    "Ignoring URL entry %s in allowed_domains." % domain
+                )
                 warnings.warn(message, URLWarning)
             elif port_pattern.search(domain):
-                message = ("allowed_domains accepts only domains without ports. "
-                           "Ignoring entry %s in allowed_domains." % domain)
+                message = (
+                    "allowed_domains accepts only domains without ports. "
+                    "Ignoring entry %s in allowed_domains." % domain
+                )
                 warnings.warn(message, PortWarning)
             else:
                 domains.append(re.escape(domain))

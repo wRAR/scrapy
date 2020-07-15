@@ -59,7 +59,6 @@ def _responses(request, status_codes):
 
 
 class TestHttpErrorMiddleware(TestCase):
-
     def setUp(self):
         crawler = get_crawler(Spider)
         self.spider = Spider.from_crawler(crawler, name='foo')
@@ -72,15 +71,12 @@ class TestHttpErrorMiddleware(TestCase):
         self.assertRaises(HttpError, self.mw.process_spider_input, self.res404, self.spider)
 
     def test_process_spider_exception(self):
-        self.assertEqual(
-            [],
-            self.mw.process_spider_exception(self.res404, HttpError(self.res404), self.spider))
+        self.assertEqual([], self.mw.process_spider_exception(self.res404, HttpError(self.res404), self.spider))
         self.assertIsNone(self.mw.process_spider_exception(self.res404, Exception(), self.spider))
 
     def test_handle_httpstatus_list(self):
         res = self.res404.copy()
-        res.request = Request('http://scrapytest.org',
-                              meta={'handle_httpstatus_list': [404]})
+        res.request = Request('http://scrapytest.org', meta={'handle_httpstatus_list': [404]})
         self.assertIsNone(self.mw.process_spider_input(res, self.spider))
 
         self.spider.handle_httpstatus_list = [404]
@@ -118,7 +114,6 @@ class TestHttpErrorMiddlewareSettings(TestCase):
 
 
 class TestHttpErrorMiddlewareHandleAll(TestCase):
-
     def setUp(self):
         self.spider = Spider('foo')
         self.mw = HttpErrorMiddleware(Settings({'HTTPERROR_ALLOW_ALL': True}))

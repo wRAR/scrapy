@@ -31,7 +31,8 @@ def get_meta_refresh(response, ignore_tags=('script', 'noscript')):
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(
-            text, response.url, response.encoding, ignore_tags=ignore_tags)
+            text, response.url, response.encoding, ignore_tags=ignore_tags
+        )
     return _metaref_cache[response]
 
 
@@ -65,6 +66,7 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     tag for external links to work
     """
     from scrapy.http import HtmlResponse, TextResponse
+
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
@@ -75,8 +77,7 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     elif isinstance(response, TextResponse):
         ext = '.txt'
     else:
-        raise TypeError("Unsupported response type: %s" %
-                        response.__class__.__name__)
+        raise TypeError("Unsupported response type: %s" % response.__class__.__name__)
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

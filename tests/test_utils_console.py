@@ -1,14 +1,17 @@
 import unittest
 
 from scrapy.utils.console import get_shell_embed_func
+
 try:
     import bpython
+
     bpy = True
     del bpython
 except ImportError:
     bpy = False
 try:
     import IPython
+
     ipy = True
     del IPython
 except ImportError:
@@ -16,7 +19,6 @@ except ImportError:
 
 
 class UtilsConsoleTestCase(unittest.TestCase):
-
     def test_get_shell_embed_func(self):
 
         shell = get_shell_embed_func(['invalid'])

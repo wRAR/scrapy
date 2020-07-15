@@ -54,43 +54,62 @@ class ImagesPipelineTestCase(unittest.TestCase):
         file_path = self.pipeline.file_path
         self.assertEqual(
             file_path(Request("https://dev.mydeco.com/mydeco.gif")),
-            'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+            'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg',
+        )
         self.assertEqual(
             file_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg")),
-            'full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg')
+            'full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg',
+        )
         self.assertEqual(
             file_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif")),
-            'full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg')
+            'full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg',
+        )
         self.assertEqual(
             file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
-            'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
+            'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg',
+        )
         self.assertEqual(
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
-            'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg')
+            'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg',
+        )
         self.assertEqual(
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
-            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg',
+        )
         self.assertEqual(
-            file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
-                      response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                      info=object()),
-            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
+            file_path(
+                Request("http://www.dorma.co.uk/images/product_details/2532"),
+                response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                info=object(),
+            ),
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg',
+        )
 
     def test_thumbnail_name(self):
         thumb_path = self.pipeline.thumb_path
         name = '50'
-        self.assertEqual(thumb_path(Request("file:///tmp/foo.jpg"), name),
-                         'thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
-        self.assertEqual(thumb_path(Request("file://foo.png"), name),
-                         'thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg')
-        self.assertEqual(thumb_path(Request("file:///tmp/foo"), name),
-                         'thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg')
-        self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name),
-                         'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
-        self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name,
-                                    response=Response("file:///tmp/some.name/foo"),
-                                    info=object()),
-                         'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
+        self.assertEqual(
+            thumb_path(Request("file:///tmp/foo.jpg"), name), 'thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg'
+        )
+        self.assertEqual(
+            thumb_path(Request("file://foo.png"), name), 'thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg'
+        )
+        self.assertEqual(
+            thumb_path(Request("file:///tmp/foo"), name), 'thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg'
+        )
+        self.assertEqual(
+            thumb_path(Request("file:///tmp/some.name/foo"), name),
+            'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg',
+        )
+        self.assertEqual(
+            thumb_path(
+                Request("file:///tmp/some.name/foo"),
+                name,
+                response=Response("file:///tmp/some.name/foo"),
+                info=object(),
+            ),
+            'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg',
+        )
 
     def test_convert_image(self):
         SIZE = (100, 100)
@@ -136,7 +155,6 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
 
 class ImagesPipelineTestCaseFieldsMixin:
-
     def test_item_fields_default(self):
         url = 'http://www.example.com/images/1.jpg'
         item = self.item_class(name='item1', image_urls=[url])
@@ -152,11 +170,15 @@ class ImagesPipelineTestCaseFieldsMixin:
     def test_item_fields_override_settings(self):
         url = 'http://www.example.com/images/1.jpg'
         item = self.item_class(name='item1', custom_image_urls=[url])
-        pipeline = ImagesPipeline.from_settings(Settings({
-            'IMAGES_STORE': 's3://example/images/',
-            'IMAGES_URLS_FIELD': 'custom_image_urls',
-            'IMAGES_RESULT_FIELD': 'custom_images'
-        }))
+        pipeline = ImagesPipeline.from_settings(
+            Settings(
+                {
+                    'IMAGES_STORE': 's3://example/images/',
+                    'IMAGES_URLS_FIELD': 'custom_image_urls',
+                    'IMAGES_RESULT_FIELD': 'custom_images',
+                }
+            )
+        )
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
@@ -228,17 +250,12 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         ("MIN_HEIGHT", "IMAGES_MIN_HEIGHT"),
         ("IMAGES_URLS_FIELD", "IMAGES_URLS_FIELD"),
         ("IMAGES_RESULT_FIELD", "IMAGES_RESULT_FIELD"),
-        ("THUMBS", "IMAGES_THUMBS")
+        ("THUMBS", "IMAGES_THUMBS"),
     ]
 
     # This should match what is defined in ImagesPipeline.
     default_pipeline_settings = dict(
-        MIN_WIDTH=0,
-        MIN_HEIGHT=0,
-        EXPIRES=90,
-        THUMBS={},
-        IMAGES_URLS_FIELD='image_urls',
-        IMAGES_RESULT_FIELD='images'
+        MIN_WIDTH=0, MIN_HEIGHT=0, EXPIRES=90, THUMBS={}, IMAGES_URLS_FIELD='image_urls', IMAGES_RESULT_FIELD='images'
     )
 
     def setUp(self):
@@ -265,8 +282,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             "IMAGES_MIN_HEIGHT": random.randint(1, 1000),
             "IMAGES_THUMBS": {
                 'small': (random.randint(1, 1000), random.randint(1, 1000)),
-                'big': (random.randint(1, 1000), random.randint(1, 1000))
-            }
+                'big': (random.randint(1, 1000), random.randint(1, 1000)),
+            },
         }
         if not prefix:
             return settings
@@ -277,13 +294,14 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         """
         :return: ImagePipeline class will all uppercase attributes set.
         """
+
         class UserDefinedImagePipeline(ImagesPipeline):
             # Values should be in different range than fake_settings.
             MIN_WIDTH = random.randint(1000, 2000)
             MIN_HEIGHT = random.randint(1000, 2000)
             THUMBS = {
                 'small': (random.randint(1000, 2000), random.randint(1000, 2000)),
-                'big': (random.randint(1000, 2000), random.randint(1000, 2000))
+                'big': (random.randint(1000, 2000), random.randint(1000, 2000)),
             }
             EXPIRES = random.randint(1000, 2000)
             IMAGES_URLS_FIELD = "field_one"
@@ -341,6 +359,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         If there are no settings for subclass and no subclass attributes, pipeline should use
         attributes of base class.
         """
+
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
@@ -355,6 +374,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         If there are custom settings for subclass and NO class attributes, pipeline should use custom
         settings.
         """
+
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
@@ -385,6 +405,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserDefinedImagePipeline(ImagesPipeline):
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
+
         pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
         self.assertEqual(pipeline.images_result_field, "something_else")
         self.assertEqual(pipeline.images_urls_field, "something")
@@ -403,8 +424,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
-            self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
-                             expected_value)
+            self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()), expected_value)
 
 
 def _create_image(format, *a, **kw):

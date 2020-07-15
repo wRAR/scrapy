@@ -11,7 +11,7 @@ def render_templatefile(path, **kwargs):
 
     content = string.Template(raw).substitute(**kwargs)
 
-    render_path = path[:-len('.tmpl')] if path.endswith('.tmpl') else path
+    render_path = path[: -len('.tmpl')] if path.endswith('.tmpl') else path
     with open(render_path, 'wb') as fp:
         fp.write(content.encode('utf8'))
     if path.endswith('.tmpl'):

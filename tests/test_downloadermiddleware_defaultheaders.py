@@ -8,14 +8,10 @@ from scrapy.utils.python import to_bytes
 
 
 class TestDefaultHeadersMiddleware(TestCase):
-
     def get_defaults_spider_mw(self):
         crawler = get_crawler(Spider)
         spider = crawler._create_spider('foo')
-        defaults = {
-            to_bytes(k): [to_bytes(v)]
-            for k, v in crawler.settings.get('DEFAULT_REQUEST_HEADERS').items()
-        }
+        defaults = {to_bytes(k): [to_bytes(v)] for k, v in crawler.settings.get('DEFAULT_REQUEST_HEADERS').items()}
         return defaults, spider, DefaultHeadersMiddleware.from_crawler(crawler)
 
     def test_process_request(self):

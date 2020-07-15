@@ -11,7 +11,6 @@ PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
 
 
 class ItemTest(unittest.TestCase):
-
     def assertSortedEqual(self, first, second, msg=None):
         return self.assertEqual(sorted(first), sorted(second), msg)
 
@@ -39,8 +38,7 @@ class ItemTest(unittest.TestCase):
         i4 = TestItem(i3)
         self.assertEqual(i4['name'], u'john doe')
 
-        self.assertRaises(KeyError, TestItem, {'name': u'john doe',
-                                               'other': u'foo'})
+        self.assertRaises(KeyError, TestItem, {'name': u'john doe', 'other': u'foo'})
 
     def test_invalid_field(self):
         class TestItem(Item):
@@ -60,8 +58,7 @@ class ItemTest(unittest.TestCase):
         i['number'] = 123
         itemrepr = repr(i)
 
-        self.assertEqual(itemrepr,
-                         "{'name': 'John Doe', 'number': 123}")
+        self.assertEqual(itemrepr, "{'name': 'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')
@@ -191,9 +188,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(D(save='X')['save'], 'X')
         self.assertEqual(D(load='X')['load'], 'X')
-        self.assertEqual(
-            D.fields,
-            {'save': {'default': 'C'}, 'load': {'default': 'D'}, 'update': {'default': 'D'}})
+        self.assertEqual(D.fields, {'save': {'default': 'C'}, 'load': {'default': 'D'}, 'update': {'default': 'D'}})
 
         # D class inverted
         class E(C, B):
@@ -201,9 +196,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
-        self.assertEqual(
-            E.fields,
-            {'save': {'default': 'C'}, 'load': {'default': 'E'}, 'update': {'default': 'C'}})
+        self.assertEqual(E.fields, {'save': {'default': 'C'}, 'load': {'default': 'E'}, 'update': {'default': 'C'}})
 
     def test_metaclass_multiple_inheritance_without_metaclass(self):
         class A(Item):
@@ -244,6 +237,7 @@ class ItemTest(unittest.TestCase):
     def test_copy(self):
         class TestItem(Item):
             name = Field()
+
         item = TestItem({'name': 'lower'})
         copied_item = item.copy()
         self.assertNotEqual(id(item), id(copied_item))
@@ -253,6 +247,7 @@ class ItemTest(unittest.TestCase):
     def test_deepcopy(self):
         class TestItem(Item):
             tags = Field()
+
         item = TestItem({'tags': ['tag1']})
         copied_item = item.deepcopy()
         item['tags'].append('tag2')
@@ -267,12 +262,12 @@ class ItemTest(unittest.TestCase):
 
             class SubclassedItem(Item):
                 pass
+
             SubclassedItem()
             self.assertEqual(len(warnings), 0)
 
 
 class ItemMetaTest(unittest.TestCase):
-
     def test_new_method_propagates_classcell(self):
         new_mock = mock.Mock(side_effect=ABCMeta.__new__)
         base = ItemMeta.__bases__[0]
@@ -304,7 +299,6 @@ class ItemMetaTest(unittest.TestCase):
 
 
 class ItemMetaClassCellRegression(unittest.TestCase):
-
     def test_item_meta_classcell_regression(self):
         class MyItem(Item, metaclass=ItemMeta):
             def __init__(self, *args, **kwargs):
@@ -316,24 +310,23 @@ class ItemMetaClassCellRegression(unittest.TestCase):
 
 
 class DictItemTest(unittest.TestCase):
-
     def test_deprecation_warning(self):
         with catch_warnings(record=True) as warnings:
             DictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         with catch_warnings(record=True) as warnings:
+
             class SubclassedDictItem(DictItem):
                 pass
+
             SubclassedDictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
 class BaseItemTest(unittest.TestCase):
-
     def test_isinstance_check(self):
-
         class SubclassedBaseItem(BaseItem):
             pass
 
@@ -386,6 +379,7 @@ class ItemNoDeprecationWarningTest(unittest.TestCase):
         """
         Make sure deprecation warnings are NOT logged whenever BaseItem subclasses are used.
         """
+
         class SubclassedItem(Item):
             pass
 

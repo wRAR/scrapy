@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class UrlLengthMiddleware:
-
     def __init__(self, maxlength):
         self.maxlength = maxlength
 
@@ -27,9 +26,11 @@ class UrlLengthMiddleware:
     def process_spider_output(self, response, result, spider):
         def _filter(request):
             if isinstance(request, Request) and len(request.url) > self.maxlength:
-                logger.debug("Ignoring link (url length > %(maxlength)d): %(url)s ",
-                             {'maxlength': self.maxlength, 'url': request.url},
-                             extra={'spider': spider})
+                logger.debug(
+                    "Ignoring link (url length > %(maxlength)d): %(url)s ",
+                    {'maxlength': self.maxlength, 'url': request.url},
+                    extra={'spider': spider},
+                )
                 return False
             else:
                 return True

@@ -61,14 +61,13 @@ class Spider(object_ref):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "
                 "or empty (but found 'start_url' attribute instead, "
-                "did you miss an 's'?)")
+                "did you miss an 's'?)"
+            )
         if method_is_overridden(cls, Spider, 'make_requests_from_url'):
             warnings.warn(
                 "Spider.make_requests_from_url method is deprecated; it "
                 "won't be called in future Scrapy releases. Please "
-                "override Spider.start_requests method instead (see %s.%s)." % (
-                    cls.__module__, cls.__name__
-                ),
+                "override Spider.start_requests method instead (see %s.%s)." % (cls.__module__, cls.__name__),
             )
             for url in self.start_urls:
                 yield self.make_requests_from_url(url)

@@ -45,7 +45,6 @@ def _mocked_download_func(request, info):
 
 
 class FilesPipelineTestCase(unittest.TestCase):
-
     def setUp(self):
         self.tempdir = mkdtemp()
         self.pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir}))
@@ -59,34 +58,49 @@ class FilesPipelineTestCase(unittest.TestCase):
         file_path = self.pipeline.file_path
         self.assertEqual(
             file_path(Request("https://dev.mydeco.com/mydeco.pdf")),
-            'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
+            'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf',
+        )
         self.assertEqual(
             file_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.txt")),
-            'full/4ce274dd83db0368bafd7e406f382ae088e39219.txt')
+            'full/4ce274dd83db0368bafd7e406f382ae088e39219.txt',
+        )
         self.assertEqual(
             file_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.doc")),
-            'full/94ccc495a17b9ac5d40e3eabf3afcb8c2c9b9e1a.doc')
+            'full/94ccc495a17b9ac5d40e3eabf3afcb8c2c9b9e1a.doc',
+        )
         self.assertEqual(
             file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
-            'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
+            'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg',
+        )
         self.assertEqual(
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
-            'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2')
+            'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2',
+        )
         self.assertEqual(
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
-            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1',
+        )
         self.assertEqual(
-            file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
-                      response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                      info=object()),
-            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+            file_path(
+                Request("http://www.dorma.co.uk/images/product_details/2532"),
+                response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                info=object(),
+            ),
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1',
+        )
         self.assertEqual(
             file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha")),
-            'full/76c00cef2ef669ae65052661f68d451162829507')
+            'full/76c00cef2ef669ae65052661f68d451162829507',
+        )
         self.assertEqual(
-            file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
-                                    //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y")),
-            'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
+            file_path(
+                Request(
+                    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
+                                    //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y"
+                )
+            ),
+            'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png',
+        )
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)
@@ -102,10 +116,10 @@ class FilesPipelineTestCase(unittest.TestCase):
         item = _create_item_with_files(item_url)
         patchers = [
             mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
-            mock.patch.object(FSFilesStore, 'stat_file', return_value={
-                'checksum': 'abc', 'last_modified': time.time()}),
-            mock.patch.object(FilesPipeline, 'get_media_requests',
-                              return_value=[_prepare_request_object(item_url)])
+            mock.patch.object(
+                FSFilesStore, 'stat_file', return_value={'checksum': 'abc', 'last_modified': time.time()}
+            ),
+            mock.patch.object(FilesPipeline, 'get_media_requests', return_value=[_prepare_request_object(item_url)]),
         ]
         for p in patchers:
             p.start()
@@ -122,12 +136,16 @@ class FilesPipelineTestCase(unittest.TestCase):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
         patchers = [
-            mock.patch.object(FSFilesStore, 'stat_file', return_value={
-                'checksum': 'abc',
-                'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2)}),
-            mock.patch.object(FilesPipeline, 'get_media_requests',
-                              return_value=[_prepare_request_object(item_url)]),
-            mock.patch.object(FilesPipeline, 'inc_stats', return_value=True)
+            mock.patch.object(
+                FSFilesStore,
+                'stat_file',
+                return_value={
+                    'checksum': 'abc',
+                    'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2),
+                },
+            ),
+            mock.patch.object(FilesPipeline, 'get_media_requests', return_value=[_prepare_request_object(item_url)]),
+            mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
         ]
         for p in patchers:
             p.start()
@@ -145,11 +163,17 @@ class FilesPipelineTestCase(unittest.TestCase):
         item = _create_item_with_files(item_url)
         patchers = [
             mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
-            mock.patch.object(FSFilesStore, 'stat_file', return_value={
-                'checksum': 'abc',
-                'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2)}),
-            mock.patch.object(FilesPipeline, 'get_media_requests',
-                              return_value=[_prepare_request_object(item_url, flags=['cached'])])
+            mock.patch.object(
+                FSFilesStore,
+                'stat_file',
+                return_value={
+                    'checksum': 'abc',
+                    'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2),
+                },
+            ),
+            mock.patch.object(
+                FilesPipeline, 'get_media_requests', return_value=[_prepare_request_object(item_url, flags=['cached'])]
+            ),
         ]
         for p in patchers:
             p.start()
@@ -163,7 +187,6 @@ class FilesPipelineTestCase(unittest.TestCase):
 
 
 class FilesPipelineTestCaseFieldsMixin:
-
     def test_item_fields_default(self):
         url = 'http://www.example.com/files/1.txt'
         item = self.item_class(name='item1', file_urls=[url])
@@ -179,11 +202,15 @@ class FilesPipelineTestCaseFieldsMixin:
     def test_item_fields_override_settings(self):
         url = 'http://www.example.com/files/1.txt'
         item = self.item_class(name='item1', custom_file_urls=[url])
-        pipeline = FilesPipeline.from_settings(Settings({
-            'FILES_STORE': 's3://example/files/',
-            'FILES_URLS_FIELD': 'custom_file_urls',
-            'FILES_RESULT_FIELD': 'custom_files'
-        }))
+        pipeline = FilesPipeline.from_settings(
+            Settings(
+                {
+                    'FILES_STORE': 's3://example/files/',
+                    'FILES_URLS_FIELD': 'custom_file_urls',
+                    'FILES_RESULT_FIELD': 'custom_files',
+                }
+            )
+        )
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
@@ -213,7 +240,6 @@ class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest
 
 @skipIf(not make_dataclass, "dataclasses module is not available")
 class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if make_dataclass:
@@ -247,15 +273,11 @@ class FilesPipelineTestCaseFieldsAttrsItem(FilesPipelineTestCaseFieldsMixin, uni
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
-    default_cls_settings = {
-        "EXPIRES": 90,
-        "FILES_URLS_FIELD": "file_urls",
-        "FILES_RESULT_FIELD": "files"
-    }
+    default_cls_settings = {"EXPIRES": 90, "FILES_URLS_FIELD": "file_urls", "FILES_RESULT_FIELD": "files"}
     file_cls_attr_settings_map = {
         ("EXPIRES", "FILES_EXPIRES", "expires"),
         ("FILES_URLS_FIELD", "FILES_URLS_FIELD", "files_urls_field"),
-        ("FILES_RESULT_FIELD", "FILES_RESULT_FIELD", "files_result_field")
+        ("FILES_RESULT_FIELD", "FILES_RESULT_FIELD", "files_result_field"),
     }
 
     def setUp(self):
@@ -265,7 +287,6 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         rmtree(self.tempdir)
 
     def _generate_fake_settings(self, prefix=None):
-
         def random_string():
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
@@ -273,7 +294,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
             "FILES_EXPIRES": random.randint(100, 1000),
             "FILES_URLS_FIELD": random_string(),
             "FILES_RESULT_FIELD": random_string(),
-            "FILES_STORE": self.tempdir
+            "FILES_STORE": self.tempdir,
         }
         if not prefix:
             return settings
@@ -281,7 +302,6 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         return {prefix.upper() + "_" + k if k != "FILES_STORE" else k: v for k, v in settings.items()}
 
     def _generate_fake_pipeline(self):
-
         class UserDefinedFilePipeline(FilesPipeline):
             EXPIRES = 1001
             FILES_URLS_FIELD = "alfa"
@@ -334,6 +354,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         If there are no settings for subclass and no subclass attributes, pipeline should use
         attributes of base class.
         """
+
         class UserDefinedFilesPipeline(FilesPipeline):
             pass
 
@@ -348,6 +369,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         If there are custom settings for subclass and NO class attributes, pipeline should use custom
         settings.
         """
+
         class UserDefinedFilesPipeline(FilesPipeline):
             pass
 
@@ -397,8 +419,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
-            self.assertEqual(getattr(pipeline_cls, pipe_inst_attr),
-                             expected_value)
+            self.assertEqual(getattr(pipeline_cls, pipe_inst_attr), expected_value)
 
 
 class TestS3FilesStore(unittest.TestCase):
@@ -413,26 +434,21 @@ class TestS3FilesStore(unittest.TestCase):
         meta = {'foo': 'bar'}
         path = ''
         store = S3FilesStore(uri)
-        yield store.persist_file(
-            path, buf, info=None, meta=meta,
-            headers={'Content-Type': 'image/png'})
+        yield store.persist_file(path, buf, info=None, meta=meta, headers={'Content-Type': 'image/png'})
         s = yield store.stat_file(path, info=None)
         self.assertIn('last_modified', s)
         self.assertIn('checksum', s)
         self.assertEqual(s['checksum'], '3187896a9657a28163abb31667df64c8')
         u = urlparse(uri)
-        content, key = get_s3_content_and_delete(
-            u.hostname, u.path[1:], with_key=True)
+        content, key = get_s3_content_and_delete(u.hostname, u.path[1:], with_key=True)
         self.assertEqual(content, data)
         if is_botocore():
             self.assertEqual(key['Metadata'], {'foo': 'bar'})
-            self.assertEqual(
-                key['CacheControl'], S3FilesStore.HEADERS['Cache-Control'])
+            self.assertEqual(key['CacheControl'], S3FilesStore.HEADERS['Cache-Control'])
             self.assertEqual(key['ContentType'], 'image/png')
         else:
             self.assertEqual(key.metadata, {'foo': 'bar'})
-            self.assertEqual(
-                key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
+            self.assertEqual(key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
             self.assertEqual(key.content_type, 'image/png')
 
 
@@ -484,8 +500,8 @@ class TestFTPFileStore(unittest.TestCase):
         self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
         path = '%s/%s' % (store.basedir, path)
         content = get_ftp_content_and_delete(
-            path, store.host, store.port,
-            store.username, store.password, store.USE_ACTIVE_MODE)
+            path, store.host, store.port, store.username, store.password, store.USE_ACTIVE_MODE
+        )
         self.assertEqual(data.decode(), content)
 
 
@@ -501,9 +517,7 @@ def _create_item_with_files(*files):
 
 
 def _prepare_request_object(item_url, flags=None):
-    return Request(
-        item_url,
-        meta={'response': Response(item_url, status=200, body=b'data', flags=flags)})
+    return Request(item_url, meta={'response': Response(item_url, status=200, body=b'data', flags=flags)})
 
 
 if __name__ == "__main__":

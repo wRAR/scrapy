@@ -88,8 +88,7 @@ def to_unicode(text, encoding=None, errors='strict'):
     if isinstance(text, str):
         return text
     if not isinstance(text, (bytes, str)):
-        raise TypeError('to_unicode must receive a bytes or str '
-                        'object, got %s' % type(text).__name__)
+        raise TypeError('to_unicode must receive a bytes or str ' 'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
     return text.decode(encoding, errors)
@@ -101,8 +100,7 @@ def to_bytes(text, encoding=None, errors='strict'):
     if isinstance(text, bytes):
         return text
     if not isinstance(text, str):
-        raise TypeError('to_bytes must receive a str or bytes '
-                        'object, got %s' % type(text).__name__)
+        raise TypeError('to_bytes must receive a str or bytes ' 'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
     return text.encode(encoding, errors)
@@ -127,10 +125,11 @@ def re_rsearch(pattern, text, chunk_size=1024):
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
     def _chunk_iter():
         offset = len(text)
         while True:
-            offset -= (chunk_size * 1024)
+            offset -= chunk_size * 1024
             if offset <= 0:
                 break
             yield (text[offset:], offset)
@@ -158,6 +157,7 @@ def memoizemethod_noargs(method):
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
+
     return new_method
 
 
@@ -202,8 +202,7 @@ def get_func_args(func, stripself=False):
     elif inspect.ismethoddescriptor(func):
         return []
     elif isinstance(func, partial):
-        return [x for x in get_func_args(func.func)[len(func.args):]
-                if not (func.keywords and x in func.keywords)]
+        return [x for x in get_func_args(func.func)[len(func.args) :] if not (func.keywords and x in func.keywords)]
     elif hasattr(func, '__call__'):
         if inspect.isroutine(func):
             return []
@@ -274,7 +273,6 @@ def equal_attributes(obj1, obj2, attributes):
 
 
 class WeakKeyCache:
-
     def __init__(self, default_factory):
         self.default_factory = default_factory
         self._weakdict = weakref.WeakKeyDictionary()
@@ -319,11 +317,15 @@ def global_object_name(obj):
 
 
 if hasattr(sys, "pypy_version_info"):
+
     def garbage_collect():
         # Collecting weakreferences can take two collections on PyPy.
         gc.collect()
         gc.collect()
+
+
 else:
+
     def garbage_collect():
         gc.collect()
 

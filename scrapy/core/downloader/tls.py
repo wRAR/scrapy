@@ -20,17 +20,18 @@ METHOD_TLSv12 = 'TLSv1.2'
 
 
 openssl_methods = {
-    METHOD_TLS: SSL.SSLv23_METHOD,                      # protocol negotiation (recommended)
-    METHOD_SSLv3: SSL.SSLv3_METHOD,                     # SSL 3 (NOT recommended)
-    METHOD_TLSv10: SSL.TLSv1_METHOD,                    # TLS 1.0 only
-    METHOD_TLSv11: getattr(SSL, 'TLSv1_1_METHOD', 5),   # TLS 1.1 only
-    METHOD_TLSv12: getattr(SSL, 'TLSv1_2_METHOD', 6),   # TLS 1.2 only
+    METHOD_TLS: SSL.SSLv23_METHOD,  # protocol negotiation (recommended)
+    METHOD_SSLv3: SSL.SSLv3_METHOD,  # SSL 3 (NOT recommended)
+    METHOD_TLSv10: SSL.TLSv1_METHOD,  # TLS 1.0 only
+    METHOD_TLSv11: getattr(SSL, 'TLSv1_1_METHOD', 5),  # TLS 1.1 only
+    METHOD_TLSv12: getattr(SSL, 'TLSv1_2_METHOD', 6),  # TLS 1.2 only
 }
 
 
 if twisted_version < (17, 0, 0):
     from twisted.internet._sslverify import _maybeSetHostNameIndication as set_tlsext_host_name
 else:
+
     def set_tlsext_host_name(connection, hostNameBytes):
         connection.set_tlsext_host_name(hostNameBytes)
 
@@ -57,21 +58,22 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
             if self.verbose_logging:
                 if hasattr(connection, 'get_cipher_name'):  # requires pyOPenSSL 0.15
                     if hasattr(connection, 'get_protocol_version_name'):  # requires pyOPenSSL 16.0.0
-                        logger.debug('SSL connection to %s using protocol %s, cipher %s',
-                                     self._hostnameASCII,
-                                     connection.get_protocol_version_name(),
-                                     connection.get_cipher_name(),
-                                     )
+                        logger.debug(
+                            'SSL connection to %s using protocol %s, cipher %s',
+                            self._hostnameASCII,
+                            connection.get_protocol_version_name(),
+                            connection.get_cipher_name(),
+                        )
                     else:
-                        logger.debug('SSL connection to %s using cipher %s',
-                                     self._hostnameASCII,
-                                     connection.get_cipher_name(),
-                                     )
+                        logger.debug(
+                            'SSL connection to %s using cipher %s', self._hostnameASCII, connection.get_cipher_name(),
+                        )
                 server_cert = connection.get_peer_certificate()
-                logger.debug('SSL connection certificate: issuer "%s", subject "%s"',
-                             x509name_to_string(server_cert.get_issuer()),
-                             x509name_to_string(server_cert.get_subject()),
-                             )
+                logger.debug(
+                    'SSL connection certificate: issuer "%s", subject "%s"',
+                    x509name_to_string(server_cert.get_issuer()),
+                    x509name_to_string(server_cert.get_subject()),
+                )
                 key_info = get_temp_key_info(connection._ssl)
                 if key_info:
                     logger.debug('SSL temp key: %s', key_info)
@@ -79,15 +81,13 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
             try:
                 verifyHostname(connection, self._hostnameASCII)
             except (CertificateError, VerificationError) as e:
-                logger.warning(
-                    'Remote certificate is not valid for hostname "{}"; {}'.format(
-                        self._hostnameASCII, e))
+                logger.warning('Remote certificate is not valid for hostname "{}"; {}'.format(self._hostnameASCII, e))
 
             except ValueError as e:
                 logger.warning(
                     'Ignoring error while verifying certificate '
-                    'from host "{}" (exception: {})'.format(
-                        self._hostnameASCII, repr(e)))
+                    'from host "{}" (exception: {})'.format(self._hostnameASCII, repr(e))
+                )
 
 
 DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')

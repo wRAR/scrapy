@@ -6,7 +6,6 @@ from scrapy.spiders import Spider
 
 
 class TestUrlLengthMiddleware(TestCase):
-
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
 

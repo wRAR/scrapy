@@ -11,7 +11,6 @@ class MyException(Exception):
 
 
 class TestDownloaderStats(TestCase):
-
     def setUp(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('scrapytest.org')
@@ -26,7 +25,7 @@ class TestDownloaderStats(TestCase):
         self.assertEqual(
             self.crawler.stats.get_value(key, spider=self.spider),
             value,
-            str(self.crawler.stats.get_stats(self.spider))
+            str(self.crawler.stats.get_stats(self.spider)),
         )
 
     def test_process_request(self):
@@ -40,10 +39,7 @@ class TestDownloaderStats(TestCase):
     def test_process_exception(self):
         self.mw.process_exception(self.req, MyException(), self.spider)
         self.assertStatsEqual('downloader/exception_count', 1)
-        self.assertStatsEqual(
-            'downloader/exception_type_count/tests.test_downloadermiddleware_stats.MyException',
-            1
-        )
+        self.assertStatsEqual('downloader/exception_type_count/tests.test_downloadermiddleware_stats.MyException', 1)
 
     def tearDown(self):
         self.crawler.stats.close_spider(self.spider, '')

@@ -15,10 +15,22 @@ from scrapy.utils.curl import curl_to_request_kwargs
 
 
 class Request(object_ref):
-
-    def __init__(self, url, callback=None, method='GET', headers=None, body=None,
-                 cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None, cb_kwargs=None):
+    def __init__(
+        self,
+        url,
+        callback=None,
+        method='GET',
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding='utf-8',
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        flags=None,
+        cb_kwargs=None,
+    ):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
@@ -98,8 +110,21 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback', 'cb_kwargs']:
+        for x in [
+            'url',
+            'method',
+            'headers',
+            'body',
+            'cookies',
+            'meta',
+            'flags',
+            'encoding',
+            'priority',
+            'dont_filter',
+            'callback',
+            'errback',
+            'cb_kwargs',
+        ]:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

@@ -35,9 +35,16 @@ _default_link_extractor = LinkExtractor()
 
 
 class Rule:
-
-    def __init__(self, link_extractor=None, callback=None, cb_kwargs=None, follow=None,
-                 process_links=None, process_request=None, errback=None):
+    def __init__(
+        self,
+        link_extractor=None,
+        callback=None,
+        cb_kwargs=None,
+        follow=None,
+        process_links=None,
+        process_request=None,
+        errback=None,
+    ):
         self.link_extractor = link_extractor or _default_link_extractor
         self.callback = callback
         self.errback = errback
@@ -100,8 +107,7 @@ class CrawlSpider(Spider):
             return
         seen = set()
         for rule_index, rule in enumerate(self._rules):
-            links = [lnk for lnk in rule.link_extractor.extract_links(response)
-                     if lnk not in seen]
+            links = [lnk for lnk in rule.link_extractor.extract_links(response) if lnk not in seen]
             for link in rule.process_links(links):
                 seen.add(link)
                 request = self._build_request(rule_index, link)

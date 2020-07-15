@@ -20,6 +20,7 @@ def defer_fail(_failure):
     before attending pending delayed calls, so do not set delay to zero.
     """
     from twisted.internet import reactor
+
     d = defer.Deferred()
     reactor.callLater(0.1, d.errback, _failure)
     return d
@@ -33,6 +34,7 @@ def defer_succeed(result):
     before attending pending delayed calls, so do not set delay to zero.
     """
     from twisted.internet import reactor
+
     d = defer.Deferred()
     reactor.callLater(0.1, d.callback, result)
     return d
@@ -89,9 +91,7 @@ def process_chain_both(callbacks, errbacks, input, *a, **kw):
     d = defer.Deferred()
     for cb, eb in zip(callbacks, errbacks):
         d.addCallbacks(
-            callback=cb, errback=eb,
-            callbackArgs=a, callbackKeywords=kw,
-            errbackArgs=a, errbackKeywords=kw,
+            callback=cb, errback=eb, callbackArgs=a, callbackKeywords=kw, errbackArgs=a, errbackKeywords=kw,
         )
     if isinstance(input, failure.Failure):
         d.errback(input)
@@ -152,9 +152,11 @@ def deferred_f_from_coro_f(coro_f):
     The coroutine function will be called at the time when the wrapper is called. Wrapper args will be passed to it.
     This is useful for callback chains, as callback functions are called with the previous callback result.
     """
+
     @wraps(coro_f)
     def f(*coro_args, **coro_kwargs):
         return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
+
     return f
 
 

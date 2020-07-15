@@ -8,7 +8,6 @@ from scrapy.utils.test import get_crawler
 
 
 class TestDepthMiddleware(TestCase):
-
     def setUp(self):
         crawler = get_crawler(Spider)
         self.spider = crawler._create_spider('scrapytest.org')

@@ -21,8 +21,7 @@ class Root(Resource):
         for nl in nlist:
             args['n'] = nl
             argstr = urlencode(args, doseq=True)
-            request.write("<a href='/follow?{0}'>follow {1}</a><br>"
-                          .format(argstr, nl).encode('utf8'))
+            request.write("<a href='/follow?{0}'>follow {1}</a><br>".format(argstr, nl).encode('utf8'))
         request.write(b"</body></html>")
         return b''
 
@@ -33,6 +32,7 @@ def _getarg(request, name, default=None, type=str):
 
 if __name__ == '__main__':
     from twisted.internet import reactor
+
     root = Root()
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, Site(root))
@@ -40,5 +40,6 @@ if __name__ == '__main__':
     def _print_listening():
         httpHost = httpPort.getHost()
         print("Bench server at http://{}:{}".format(httpHost.host, httpHost.port))
+
     reactor.callWhenRunning(_print_listening)
     reactor.run()

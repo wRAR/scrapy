@@ -94,6 +94,7 @@ class S3FilesStore:
         self.is_botocore = is_botocore()
         if self.is_botocore:
             import botocore.session
+
             session = botocore.session.get_session()
             self.s3_client = session.create_client(
                 's3',
@@ -102,10 +103,11 @@ class S3FilesStore:
                 endpoint_url=self.AWS_ENDPOINT_URL,
                 region_name=self.AWS_REGION_NAME,
                 use_ssl=self.AWS_USE_SSL,
-                verify=self.AWS_VERIFY
+                verify=self.AWS_VERIFY,
             )
         else:
             from boto.s3.connection import S3Connection
+
             self.S3Connection = S3Connection
         if not uri.startswith("s3://"):
             raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
@@ -135,10 +137,7 @@ class S3FilesStore:
     def _get_boto_key(self, path):
         key_name = '%s%s' % (self.prefix, path)
         if self.is_botocore:
-            return threads.deferToThread(
-                self.s3_client.head_object,
-                Bucket=self.bucket,
-                Key=key_name)
+            return threads.deferToThread(self.s3_client.head_object, Bucket=self.bucket, Key=key_name)
         else:
             b = self._get_boto_bucket()
             return threads.deferToThread(b.get_key, key_name)
@@ -158,7 +157,8 @@ class S3FilesStore:
                 Body=buf,
                 Metadata={k: str(v) for k, v in (meta or {}).items()},
                 ACL=self.POLICY,
-                **extra)
+                **extra
+            )
         else:
             b = self._get_boto_bucket()
             k = b.new_key(key_name)
@@ -168,48 +168,47 @@ class S3FilesStore:
             h = self.HEADERS.copy()
             if headers:
                 h.update(headers)
-            return threads.deferToThread(
-                k.set_contents_from_string, buf.getvalue(),
-                headers=h, policy=self.POLICY)
+            return threads.deferToThread(k.set_contents_from_string, buf.getvalue(), headers=h, policy=self.POLICY)
 
     def _headers_to_botocore_kwargs(self, headers):
         """ Convert headers to botocore keyword agruments.
         """
         # This is required while we need to support both boto and botocore.
-        mapping = CaselessDict({
-            'Content-Type': 'ContentType',
-            'Cache-Control': 'CacheControl',
-            'Content-Disposition': 'ContentDisposition',
-            'Content-Encoding': 'ContentEncoding',
-            'Content-Language': 'ContentLanguage',
-            'Content-Length': 'ContentLength',
-            'Content-MD5': 'ContentMD5',
-            'Expires': 'Expires',
-            'X-Amz-Grant-Full-Control': 'GrantFullControl',
-            'X-Amz-Grant-Read': 'GrantRead',
-            'X-Amz-Grant-Read-ACP': 'GrantReadACP',
-            'X-Amz-Grant-Write-ACP': 'GrantWriteACP',
-            'X-Amz-Object-Lock-Legal-Hold': 'ObjectLockLegalHoldStatus',
-            'X-Amz-Object-Lock-Mode': 'ObjectLockMode',
-            'X-Amz-Object-Lock-Retain-Until-Date': 'ObjectLockRetainUntilDate',
-            'X-Amz-Request-Payer': 'RequestPayer',
-            'X-Amz-Server-Side-Encryption': 'ServerSideEncryption',
-            'X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id': 'SSEKMSKeyId',
-            'X-Amz-Server-Side-Encryption-Context': 'SSEKMSEncryptionContext',
-            'X-Amz-Server-Side-Encryption-Customer-Algorithm': 'SSECustomerAlgorithm',
-            'X-Amz-Server-Side-Encryption-Customer-Key': 'SSECustomerKey',
-            'X-Amz-Server-Side-Encryption-Customer-Key-Md5': 'SSECustomerKeyMD5',
-            'X-Amz-Storage-Class': 'StorageClass',
-            'X-Amz-Tagging': 'Tagging',
-            'X-Amz-Website-Redirect-Location': 'WebsiteRedirectLocation',
-        })
+        mapping = CaselessDict(
+            {
+                'Content-Type': 'ContentType',
+                'Cache-Control': 'CacheControl',
+                'Content-Disposition': 'ContentDisposition',
+                'Content-Encoding': 'ContentEncoding',
+                'Content-Language': 'ContentLanguage',
+                'Content-Length': 'ContentLength',
+                'Content-MD5': 'ContentMD5',
+                'Expires': 'Expires',
+                'X-Amz-Grant-Full-Control': 'GrantFullControl',
+                'X-Amz-Grant-Read': 'GrantRead',
+                'X-Amz-Grant-Read-ACP': 'GrantReadACP',
+                'X-Amz-Grant-Write-ACP': 'GrantWriteACP',
+                'X-Amz-Object-Lock-Legal-Hold': 'ObjectLockLegalHoldStatus',
+                'X-Amz-Object-Lock-Mode': 'ObjectLockMode',
+                'X-Amz-Object-Lock-Retain-Until-Date': 'ObjectLockRetainUntilDate',
+                'X-Amz-Request-Payer': 'RequestPayer',
+                'X-Amz-Server-Side-Encryption': 'ServerSideEncryption',
+                'X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id': 'SSEKMSKeyId',
+                'X-Amz-Server-Side-Encryption-Context': 'SSEKMSEncryptionContext',
+                'X-Amz-Server-Side-Encryption-Customer-Algorithm': 'SSECustomerAlgorithm',
+                'X-Amz-Server-Side-Encryption-Customer-Key': 'SSECustomerKey',
+                'X-Amz-Server-Side-Encryption-Customer-Key-Md5': 'SSECustomerKeyMD5',
+                'X-Amz-Storage-Class': 'StorageClass',
+                'X-Amz-Tagging': 'Tagging',
+                'X-Amz-Website-Redirect-Location': 'WebsiteRedirectLocation',
+            }
+        )
         extra = {}
         for key, value in headers.items():
             try:
                 kwarg = mapping[key]
             except KeyError:
-                raise TypeError(
-                    'Header "%s" is not supported by botocore' % key)
+                raise TypeError('Header "%s" is not supported by botocore' % key)
             else:
                 extra[kwarg] = value
         return extra
@@ -227,23 +226,22 @@ class GCSFilesStore:
 
     def __init__(self, uri):
         from google.cloud import storage
+
         client = storage.Client(project=self.GCS_PROJECT_ID)
         bucket, prefix = uri[5:].split('/', 1)
         self.bucket = client.bucket(bucket)
         self.prefix = prefix
-        permissions = self.bucket.test_iam_permissions(
-            ['storage.objects.get', 'storage.objects.create']
-        )
+        permissions = self.bucket.test_iam_permissions(['storage.objects.get', 'storage.objects.create'])
         if 'storage.objects.get' not in permissions:
             logger.warning(
                 "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
                 "Checking if files are up to date will be impossible. Files will be downloaded every time.",
-                {'bucket': bucket}
+                {'bucket': bucket},
             )
         if 'storage.objects.create' not in permissions:
             logger.error(
                 "No 'storage.objects.create' permission for GSC bucket %(bucket)s. Saving files will be impossible!",
-                {'bucket': bucket}
+                {'bucket': bucket},
             )
 
     def stat_file(self, path, info):
@@ -271,7 +269,7 @@ class GCSFilesStore:
             blob.upload_from_string,
             data=buf.getvalue(),
             content_type=self._get_content_type(headers),
-            predefined_acl=self.POLICY
+            predefined_acl=self.POLICY,
         )
 
 
@@ -295,9 +293,14 @@ class FTPFilesStore:
     def persist_file(self, path, buf, info, meta=None, headers=None):
         path = '%s/%s' % (self.basedir, path)
         return threads.deferToThread(
-            ftp_store_file, path=path, file=buf,
-            host=self.host, port=self.port, username=self.username,
-            password=self.password, use_active_mode=self.USE_ACTIVE_MODE
+            ftp_store_file,
+            path=path,
+            file=buf,
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+            use_active_mode=self.USE_ACTIVE_MODE,
         )
 
     def stat_file(self, path, info):
@@ -316,6 +319,7 @@ class FTPFilesStore:
             # The file doesn't exist
             except Exception:
                 return {}
+
         return threads.deferToThread(_stat_file, path)
 
 
@@ -345,7 +349,7 @@ class FilesPipeline(MediaPipeline):
         'file': FSFilesStore,
         's3': S3FilesStore,
         'gs': GCSFilesStore,
-        'ftp': FTPFilesStore
+        'ftp': FTPFilesStore,
     }
     DEFAULT_FILES_URLS_FIELD = 'file_urls'
     DEFAULT_FILES_RESULT_FIELD = 'files'
@@ -359,22 +363,14 @@ class FilesPipeline(MediaPipeline):
 
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
-        resolve = functools.partial(self._key_for_pipe,
-                                    base_class_name=cls_name,
-                                    settings=settings)
-        self.expires = settings.getint(
-            resolve('FILES_EXPIRES'), self.EXPIRES
-        )
+        resolve = functools.partial(self._key_for_pipe, base_class_name=cls_name, settings=settings)
+        self.expires = settings.getint(resolve('FILES_EXPIRES'), self.EXPIRES)
         if not hasattr(self, "FILES_URLS_FIELD"):
             self.FILES_URLS_FIELD = self.DEFAULT_FILES_URLS_FIELD
         if not hasattr(self, "FILES_RESULT_FIELD"):
             self.FILES_RESULT_FIELD = self.DEFAULT_FILES_RESULT_FIELD
-        self.files_urls_field = settings.get(
-            resolve('FILES_URLS_FIELD'), self.FILES_URLS_FIELD
-        )
-        self.files_result_field = settings.get(
-            resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
-        )
+        self.files_urls_field = settings.get(resolve('FILES_URLS_FIELD'), self.FILES_URLS_FIELD)
+        self.files_result_field = settings.get(resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD)
 
         super(FilesPipeline, self).__init__(download_func=download_func, settings=settings)
 
@@ -425,11 +421,9 @@ class FilesPipeline(MediaPipeline):
 
             referer = referer_str(request)
             logger.debug(
-                'File (uptodate): Downloaded %(medianame)s from %(request)s '
-                'referred in <%(referer)s>',
-                {'medianame': self.MEDIA_NAME, 'request': request,
-                 'referer': referer},
-                extra={'spider': info.spider}
+                'File (uptodate): Downloaded %(medianame)s from %(request)s ' 'referred in <%(referer)s>',
+                {'medianame': self.MEDIA_NAME, 'request': request, 'referer': referer},
+                extra={'spider': info.spider},
             )
             self.inc_stats(info.spider, 'uptodate')
 
@@ -440,10 +434,11 @@ class FilesPipeline(MediaPipeline):
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
         dfd.addErrback(
-            lambda f:
-            logger.error(self.__class__.__name__ + '.store.stat_file',
-                         exc_info=failure_to_exc_info(f),
-                         extra={'spider': info.spider})
+            lambda f: logger.error(
+                self.__class__.__name__ + '.store.stat_file',
+                exc_info=failure_to_exc_info(f),
+                extra={'spider': info.spider},
+            )
         )
         return dfd
 
@@ -453,9 +448,8 @@ class FilesPipeline(MediaPipeline):
             logger.warning(
                 'File (unknown-error): Error downloading %(medianame)s from '
                 '%(request)s referred in <%(referer)s>: %(exception)s',
-                {'medianame': self.MEDIA_NAME, 'request': request,
-                 'referer': referer, 'exception': failure.value},
-                extra={'spider': info.spider}
+                {'medianame': self.MEDIA_NAME, 'request': request, 'referer': referer, 'exception': failure.value},
+                extra={'spider': info.spider},
             )
 
         raise FileException
@@ -465,29 +459,25 @@ class FilesPipeline(MediaPipeline):
 
         if response.status != 200:
             logger.warning(
-                'File (code: %(status)s): Error downloading file from '
-                '%(request)s referred in <%(referer)s>',
-                {'status': response.status,
-                 'request': request, 'referer': referer},
-                extra={'spider': info.spider}
+                'File (code: %(status)s): Error downloading file from ' '%(request)s referred in <%(referer)s>',
+                {'status': response.status, 'request': request, 'referer': referer},
+                extra={'spider': info.spider},
             )
             raise FileException('download-error')
 
         if not response.body:
             logger.warning(
-                'File (empty-content): Empty file from %(request)s referred '
-                'in <%(referer)s>: no-content',
+                'File (empty-content): Empty file from %(request)s referred ' 'in <%(referer)s>: no-content',
                 {'request': request, 'referer': referer},
-                extra={'spider': info.spider}
+                extra={'spider': info.spider},
             )
             raise FileException('empty-content')
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
         logger.debug(
-            'File (%(status)s): Downloaded file from %(request)s referred in '
-            '<%(referer)s>',
+            'File (%(status)s): Downloaded file from %(request)s referred in ' '<%(referer)s>',
             {'status': status, 'request': request, 'referer': referer},
-            extra={'spider': info.spider}
+            extra={'spider': info.spider},
         )
         self.inc_stats(info.spider, status)
 
@@ -496,18 +486,18 @@ class FilesPipeline(MediaPipeline):
             checksum = self.file_downloaded(response, request, info)
         except FileException as exc:
             logger.warning(
-                'File (error): Error processing file from %(request)s '
-                'referred in <%(referer)s>: %(errormsg)s',
+                'File (error): Error processing file from %(request)s ' 'referred in <%(referer)s>: %(errormsg)s',
                 {'request': request, 'referer': referer, 'errormsg': str(exc)},
-                extra={'spider': info.spider}, exc_info=True
+                extra={'spider': info.spider},
+                exc_info=True,
             )
             raise
         except Exception as exc:
             logger.error(
-                'File (unknown-error): Error processing file from %(request)s '
-                'referred in <%(referer)s>',
+                'File (unknown-error): Error processing file from %(request)s ' 'referred in <%(referer)s>',
                 {'request': request, 'referer': referer},
-                exc_info=True, extra={'spider': info.spider}
+                exc_info=True,
+                extra={'spider': info.spider},
             )
             raise FileException(str(exc))
 

@@ -30,12 +30,8 @@ class MediaPipeline:
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-        resolve = functools.partial(self._key_for_pipe,
-                                    base_class_name="MediaPipeline",
-                                    settings=settings)
-        self.allow_redirects = settings.getbool(
-            resolve('MEDIA_ALLOW_REDIRECTS'), False
-        )
+        resolve = functools.partial(self._key_for_pipe, base_class_name="MediaPipeline", settings=settings)
+        self.allow_redirects = settings.getbool(resolve('MEDIA_ALLOW_REDIRECTS'), False)
         self._handle_statuses(self.allow_redirects)
 
     def _handle_statuses(self, allow_redirects):
@@ -54,11 +50,7 @@ class MediaPipeline:
         """
         class_name = self.__class__.__name__
         formatted_key = "{}_{}".format(class_name.upper(), key)
-        if (
-            not base_class_name
-            or class_name == base_class_name
-            or settings and not settings.get(formatted_key)
-        ):
+        if not base_class_name or class_name == base_class_name or settings and not settings.get(formatted_key):
             return key
         return formatted_key
 
@@ -105,9 +97,7 @@ class MediaPipeline:
         dfd = mustbe_deferred(self.media_to_download, request, info)
         dfd.addCallback(self._check_media_to_download, request, info)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
-        dfd.addErrback(lambda f: logger.error(
-            f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
-        )
+        dfd.addErrback(lambda f: logger.error(f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider}))
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
     def _modify_media_request(self, request):
@@ -123,14 +113,20 @@ class MediaPipeline:
             # this ugly code was left only to support tests. TODO: remove
             dfd = mustbe_deferred(self.download_func, request, info.spider)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info),
-                errback=self.media_failed, errbackArgs=(request, info))
+                callback=self.media_downloaded,
+                callbackArgs=(request, info),
+                errback=self.media_failed,
+                errbackArgs=(request, info),
+            )
         else:
             self._modify_media_request(request)
             dfd = self.crawler.engine.download(request, info.spider)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info),
-                errback=self.media_failed, errbackArgs=(request, info))
+                callback=self.media_downloaded,
+                callbackArgs=(request, info),
+                errback=self.media_failed,
+                errbackArgs=(request, info),
+            )
         return dfd
 
     def _cache_result_and_execute_waiters(self, result, fp, info):
@@ -196,6 +192,6 @@ class MediaPipeline:
                         '%(class)s found errors processing %(item)s',
                         {'class': self.__class__.__name__, 'item': item},
                         exc_info=failure_to_exc_info(value),
-                        extra={'spider': info.spider}
+                        extra={'spider': info.spider},
                     )
         return item

@@ -6,10 +6,8 @@ from scrapy.http.cookies import WrappedRequest, WrappedResponse
 
 
 class WrappedRequestTest(TestCase):
-
     def setUp(self):
-        self.request = Request("http://www.example.com/page.html",
-                               headers={"Content-Type": "text/html"})
+        self.request = Request("http://www.example.com/page.html", headers={"Content-Type": "text/html"})
         self.wrapped = WrappedRequest(self.request)
 
     def test_get_full_url(self):
@@ -46,8 +44,7 @@ class WrappedRequestTest(TestCase):
         self.assertEqual(self.wrapped.get_header('xxxxx', 'def'), 'def')
 
     def test_header_items(self):
-        self.assertEqual(self.wrapped.header_items(),
-                         [('Content-Type', ['text/html'])])
+        self.assertEqual(self.wrapped.header_items(), [('Content-Type', ['text/html'])])
 
     def test_add_unredirected_header(self):
         self.wrapped.add_unredirected_header('hello', 'world')
@@ -55,10 +52,8 @@ class WrappedRequestTest(TestCase):
 
 
 class WrappedResponseTest(TestCase):
-
     def setUp(self):
-        self.response = Response("http://www.example.com/page.html",
-                                 headers={"Content-TYpe": "text/html"})
+        self.response = Response("http://www.example.com/page.html", headers={"Content-TYpe": "text/html"})
         self.wrapped = WrappedResponse(self.response)
 
     def test_info(self):

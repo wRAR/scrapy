@@ -70,13 +70,13 @@ def get_project_settings():
 
     pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
     if pickled_settings:
-        warnings.warn("Use of environment variable "
-                      "'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE' "
-                      "is deprecated.", ScrapyDeprecationWarning)
+        warnings.warn(
+            "Use of environment variable " "'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE' " "is deprecated.",
+            ScrapyDeprecationWarning,
+        )
         settings.setdict(pickle.loads(pickled_settings), priority='project')
 
-    scrapy_envvars = {k[7:]: v for k, v in os.environ.items() if
-                      k.startswith('SCRAPY_')}
+    scrapy_envvars = {k[7:]: v for k, v in os.environ.items() if k.startswith('SCRAPY_')}
     valid_envvars = {
         'CHECK',
         'PICKLED_SETTINGS_TO_OVERRIDE',
@@ -91,7 +91,7 @@ def get_project_settings():
             'Use of environment variables prefixed with SCRAPY_ to override '
             'settings is deprecated. The following environment variables are '
             'currently defined: {}'.format(setting_envvar_list),
-            ScrapyDeprecationWarning
+            ScrapyDeprecationWarning,
         )
     settings.setdict(scrapy_envvars, priority='project')
 

@@ -33,10 +33,12 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
     depth = 2
 
     def _get_req(self, index, cb=None):
-        return Request(self.mockserver.url("/status?n=200&request=%d" % index),
-                       meta={'index': index},
-                       dont_filter=True,
-                       callback=cb)
+        return Request(
+            self.mockserver.url("/status?n=200&request=%d" % index),
+            meta={'index': index},
+            dont_filter=True,
+            callback=cb,
+        )
 
     def start_requests(self):
         for i in range(1, self.initial_reqs + 1):

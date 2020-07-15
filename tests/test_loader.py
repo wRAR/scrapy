@@ -7,8 +7,7 @@ from itemadapter import ItemAdapter
 from scrapy.http import HtmlResponse
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
-from scrapy.loader.processors import (Compose, Identity, Join,
-                                      MapCompose, SelectJmes, TakeFirst)
+from scrapy.loader.processors import Compose, Identity, Join, MapCompose, SelectJmes, TakeFirst
 from scrapy.selector import Selector
 
 
@@ -68,7 +67,6 @@ def processor_with_args(value, other=None, loader_context=None):
 
 
 class BasicItemLoaderTest(unittest.TestCase):
-
     def test_load_item_using_default_loader(self):
         i = TestItem()
         i['summary'] = u'lala'
@@ -106,10 +104,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         # Should not ignore empty values.
         il.add_value('name', u'')
         il.add_value('price', [u'0'])
-        self.assertEqual(il.load_item(), {
-            'name': u'',
-            'price': 0.0,
-        })
+        self.assertEqual(il.load_item(), {'name': u'', 'price': 0.0,})
 
         il.replace_value('sku', [valid_fragment], re=sku_re)
         self.assertEqual(il.load_item()['sku'], u'1234')
@@ -124,16 +119,11 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = MyLoader(item={})
         il.add_value('url', 'http://example.com/')
         il.add_value('img_url', '1234.png')
-        self.assertEqual(il.load_item(), {
-            'url': 'http://example.com/',
-            'img_url': 'http://example.com/1234.png',
-        })
+        self.assertEqual(il.load_item(), {'url': 'http://example.com/', 'img_url': 'http://example.com/1234.png',})
 
         il = MyLoader(item={})
         il.add_value('img_url', '1234.png')
-        self.assertEqual(il.load_item(), {
-            'img_url': '1234.png',
-        })
+        self.assertEqual(il.load_item(), {'img_url': '1234.png',})
 
     def test_add_value(self):
         il = TestItemLoader()
@@ -207,8 +197,7 @@ class BasicItemLoaderTest(unittest.TestCase):
             return None if x == 'world' else x
 
         proc = MapCompose(filter_world, str.upper)
-        self.assertEqual(proc(['hello', 'world', 'this', 'is', 'scrapy']),
-                         ['HELLO', 'THIS', 'IS', 'SCRAPY'])
+        self.assertEqual(proc(['hello', 'world', 'this', 'is', 'scrapy']), ['HELLO', 'THIS', 'IS', 'SCRAPY'])
 
     def test_map_compose_filter_multil(self):
         class TestItemLoader(NameItemLoader):
@@ -443,8 +432,7 @@ class BasicItemLoaderTest(unittest.TestCase):
             name_in = MapCompose(float)
 
         il = TestItemLoader()
-        self.assertRaises(ValueError, il.add_value, 'name',
-                          [u'marta', u'other'])
+        self.assertRaises(ValueError, il.add_value, 'name', [u'marta', u'other'])
 
     def test_error_output_processor(self):
         class TestItem(Item):
@@ -467,8 +455,7 @@ class BasicItemLoaderTest(unittest.TestCase):
             default_item_class = TestItem
 
         il = TestItemLoader()
-        self.assertRaises(ValueError, il.add_value, 'name',
-                          [u'marta', u'other'], Compose(float))
+        self.assertRaises(ValueError, il.add_value, 'name', [u'marta', u'other'], Compose(float))
 
 
 class InitializationTestMixin:
@@ -572,14 +559,10 @@ class InitializationFromAttrsItemTest(InitializationTestMixin, unittest.TestCase
 
 @unittest.skipIf(not make_dataclass, "dataclasses module is not available")
 class InitializationFromDataClassTest(InitializationTestMixin, unittest.TestCase):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if make_dataclass:
-            self.item_class = make_dataclass(
-                "TestDataClass",
-                [("name", list, dataclass_field(default_factory=list))],
-            )
+            self.item_class = make_dataclass("TestDataClass", [("name", list, dataclass_field(default_factory=list))],)
 
 
 class BaseNoInputReprocessingLoader(ItemLoader):
@@ -595,6 +578,7 @@ class NoInputReprocessingFromDictTest(unittest.TestCase):
     """
     Loaders initialized from loaded items must not reprocess fields (dict instances)
     """
+
     def test_avoid_reprocessing_with_initial_values_single(self):
         il = NoInputReprocessingDictLoader(item=dict(title='foo'))
         il_loaded = il.load_item()
@@ -634,6 +618,7 @@ class NoInputReprocessingFromItemTest(unittest.TestCase):
     """
     Loaders initialized from loaded items must not reprocess fields (Item instances)
     """
+
     def test_avoid_reprocessing_with_initial_values_single(self):
         il = NoInputReprocessingItemLoader(item=NoInputReprocessingItem(title='foo'))
         il_loaded = il.load_item()
@@ -663,7 +648,6 @@ class NoInputReprocessingFromItemTest(unittest.TestCase):
 
 class TestOutputProcessorDict(unittest.TestCase):
     def test_output_processor(self):
-
         class TempDict(dict):
             def __init__(self, *args, **kwargs):
                 super(TempDict, self).__init__(self, *args, **kwargs)
@@ -682,7 +666,6 @@ class TestOutputProcessorDict(unittest.TestCase):
 
 class TestOutputProcessorItem(unittest.TestCase):
     def test_output_processor(self):
-
         class TempItem(Item):
             temp = Field()
 
@@ -702,7 +685,6 @@ class TestOutputProcessorItem(unittest.TestCase):
 
 
 class ProcessorsTest(unittest.TestCase):
-
     def test_take_first(self):
         proc = TakeFirst()
         self.assertEqual(proc([None, '', 'hello', 'world']), 'hello')
@@ -710,8 +692,7 @@ class ProcessorsTest(unittest.TestCase):
 
     def test_identity(self):
         proc = Identity()
-        self.assertEqual(proc([None, '', 'hello', 'world']),
-                         [None, '', 'hello', 'world'])
+        self.assertEqual(proc([None, '', 'hello', 'world']), [None, '', 'hello', 'world'])
 
     def test_join(self):
         proc = Join()
@@ -733,9 +714,9 @@ class ProcessorsTest(unittest.TestCase):
     def test_mapcompose(self):
         def filter_world(x):
             return None if x == 'world' else x
+
         proc = MapCompose(filter_world, str.upper)
-        self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
-                         [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
+        self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']), [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
         proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc(None), [])
         proc = MapCompose(filter_world, str.upper)
@@ -745,7 +726,10 @@ class ProcessorsTest(unittest.TestCase):
 
 
 class SelectortemLoaderTest(unittest.TestCase):
-    response = HtmlResponse(url="", encoding='utf-8', body=b"""
+    response = HtmlResponse(
+        url="",
+        encoding='utf-8',
+        body=b"""
     <html>
     <body>
     <div id="id">marta</div>
@@ -754,7 +738,8 @@ class SelectortemLoaderTest(unittest.TestCase):
     <img src="/images/logo.png" width="244" height="65" alt="Scrapy">
     </body>
     </html>
-    """)
+    """,
+    )
 
     def test_init_method(self):
         l = TestItemLoader()
@@ -879,8 +864,9 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_css('p::text', TakeFirst(), re='pa'), u'pa')
 
         self.assertEqual(l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
-        self.assertEqual(l.get_css(['a::attr(href)', 'img::attr(src)']),
-                         [u'http://www.scrapy.org', u'/images/logo.png'])
+        self.assertEqual(
+            l.get_css(['a::attr(href)', 'img::attr(src)']), [u'http://www.scrapy.org', u'/images/logo.png']
+        )
 
     def test_replace_css_multi_fields(self):
         l = TestItemLoader(response=self.response)
@@ -904,7 +890,10 @@ class SelectortemLoaderTest(unittest.TestCase):
 
 
 class SubselectorLoaderTest(unittest.TestCase):
-    response = HtmlResponse(url="", encoding='utf-8', body=b"""
+    response = HtmlResponse(
+        url="",
+        encoding='utf-8',
+        body=b"""
     <html>
     <body>
     <header>
@@ -917,7 +906,8 @@ class SubselectorLoaderTest(unittest.TestCase):
     </footer>
     </body>
     </html>
-    """)
+    """,
+    )
 
     def test_nested_xpath(self):
         l = NestedItemLoader(response=self.response)
@@ -971,12 +961,10 @@ class SubselectorLoaderTest(unittest.TestCase):
         nl2.add_xpath('url', 'text()')
         l.add_xpath('url', '//footer/a/@href')
 
-        self.assertEqual(l.get_output_value('url'), [
-            u'/images/logo.png',
-            u'http://www.scrapy.org',
-            u'homepage',
-            u'http://www.scrapy.org',
-        ])
+        self.assertEqual(
+            l.get_output_value('url'),
+            [u'/images/logo.png', u'http://www.scrapy.org', u'homepage', u'http://www.scrapy.org',],
+        )
 
     def test_nested_load_item(self):
         l = NestedItemLoader(response=self.response)
@@ -1004,26 +992,19 @@ class SelectJmesTestCase(unittest.TestCase):
         'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
         'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
         'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
-        'dict': (
-            'foo.bar[*].name',
-            {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
-            ['one', 'two']
-        ),
-        'list': ('[1]', [1, 2], 2)
+        'dict': ('foo.bar[*].name', {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}}, ['one', 'two']),
+        'list': ('[1]', [1, 2], 2),
     }
 
     def test_output(self):
         for l in self.test_list_equals:
             expr, test_list, expected = self.test_list_equals[l]
             test = SelectJmes(expr)(test_list)
-            self.assertEqual(
-                test,
-                expected,
-                msg='test "{}" got {} expected {}'.format(l, test, expected)
-            )
+            self.assertEqual(test, expected, msg='test "{}" got {} expected {}'.format(l, test, expected))
 
 
 # Functions as processors
+
 
 def function_processor_strip(iterable):
     return [x.strip() for x in iterable]
@@ -1034,10 +1015,7 @@ def function_processor_upper(iterable):
 
 
 class FunctionProcessorItem(Item):
-    foo = Field(
-        input_processor=function_processor_strip,
-        output_processor=function_processor_upper,
-    )
+    foo = Field(input_processor=function_processor_strip, output_processor=function_processor_upper,)
 
 
 class FunctionProcessorItemLoader(ItemLoader):
@@ -1051,24 +1029,17 @@ class FunctionProcessorDictLoader(ItemLoader):
 
 
 class FunctionProcessorTestCase(unittest.TestCase):
-
     def test_processor_defined_in_item(self):
         lo = FunctionProcessorItemLoader()
         lo.add_value('foo', '  bar  ')
         lo.add_value('foo', ['  asdf  ', '  qwerty  '])
-        self.assertEqual(
-            dict(lo.load_item()),
-            {'foo': ['BAR', 'ASDF', 'QWERTY']}
-        )
+        self.assertEqual(dict(lo.load_item()), {'foo': ['BAR', 'ASDF', 'QWERTY']})
 
     def test_processor_defined_in_item_loader(self):
         lo = FunctionProcessorDictLoader()
         lo.add_value('foo', '  bar  ')
         lo.add_value('foo', ['  asdf  ', '  qwerty  '])
-        self.assertEqual(
-            dict(lo.load_item()),
-            {'foo': ['BAR', 'ASDF', 'QWERTY']}
-        )
+        self.assertEqual(dict(lo.load_item()), {'foo': ['BAR', 'ASDF', 'QWERTY']})
 
 
 if __name__ == "__main__":

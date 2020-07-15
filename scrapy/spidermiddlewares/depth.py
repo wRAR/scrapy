@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class DepthMiddleware:
-
     def __init__(self, maxdepth, stats, verbose_stats=False, prio=1):
         self.maxdepth = maxdepth
         self.stats = stats
@@ -38,15 +37,13 @@ class DepthMiddleware:
                     logger.debug(
                         "Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
                         {'maxdepth': self.maxdepth, 'requrl': request.url},
-                        extra={'spider': spider}
+                        extra={'spider': spider},
                     )
                     return False
                 else:
                     if self.verbose_stats:
-                        self.stats.inc_value('request_depth_count/%s' % depth,
-                                             spider=spider)
-                    self.stats.max_value('request_depth_max', depth,
-                                         spider=spider)
+                        self.stats.inc_value('request_depth_count/%s' % depth, spider=spider)
+                    self.stats.max_value('request_depth_max', depth, spider=spider)
             return True
 
         # base case (depth=0)

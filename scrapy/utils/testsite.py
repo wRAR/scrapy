@@ -4,9 +4,9 @@ from twisted.web import server, resource, static, util
 
 
 class SiteTest:
-
     def setUp(self):
         from twisted.internet import reactor
+
         super(SiteTest, self).setUp()
         self.site = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
         self.baseurl = "http://localhost:%d/" % self.site.getHost().port
@@ -22,8 +22,7 @@ class SiteTest:
 class NoMetaRefreshRedirect(util.Redirect):
     def render(self, request):
         content = util.Redirect.render(self, request)
-        return content.replace(b'http-equiv=\"refresh\"',
-            b'http-no-equiv=\"do-not-refresh-me\"')
+        return content.replace(b'http-equiv=\"refresh\"', b'http-no-equiv=\"do-not-refresh-me\"')
 
 
 def test_site():
@@ -39,6 +38,7 @@ def test_site():
 
 if __name__ == '__main__':
     from twisted.internet import reactor
+
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
     print("http://localhost:%d/" % port.getHost().port)
     reactor.run()

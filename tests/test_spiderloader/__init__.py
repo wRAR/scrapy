@@ -21,7 +21,6 @@ module_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class SpiderLoaderTest(unittest.TestCase):
-
     def setUp(self):
         orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
         self.tmpdir = tempfile.mkdtemp()
@@ -40,33 +39,21 @@ class SpiderLoaderTest(unittest.TestCase):
         verifyObject(ISpiderLoader, self.spider_loader)
 
     def test_list(self):
-        self.assertEqual(
-            set(self.spider_loader.list()),
-            {'spider1', 'spider2', 'spider3', 'spider4'})
+        self.assertEqual(set(self.spider_loader.list()), {'spider1', 'spider2', 'spider3', 'spider4'})
 
     def test_load(self):
         spider1 = self.spider_loader.load("spider1")
         self.assertEqual(spider1.__name__, 'Spider1')
 
     def test_find_by_request(self):
+        self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy1.org/test')), ['spider1'])
+        self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy2.org/test')), ['spider2'])
         self.assertEqual(
-            self.spider_loader.find_by_request(Request('http://scrapy1.org/test')),
-            ['spider1'])
-        self.assertEqual(
-            self.spider_loader.find_by_request(Request('http://scrapy2.org/test')),
-            ['spider2'])
-        self.assertEqual(
-            set(self.spider_loader.find_by_request(Request('http://scrapy3.org/test'))),
-            {'spider1', 'spider2'})
-        self.assertEqual(
-            self.spider_loader.find_by_request(Request('http://scrapy999.org/test')),
-            [])
-        self.assertEqual(
-            self.spider_loader.find_by_request(Request('http://spider3.com')),
-            [])
-        self.assertEqual(
-            self.spider_loader.find_by_request(Request('http://spider3.com/onlythis')),
-            ['spider3'])
+            set(self.spider_loader.find_by_request(Request('http://scrapy3.org/test'))), {'spider1', 'spider2'}
+        )
+        self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy999.org/test')), [])
+        self.assertEqual(self.spider_loader.find_by_request(Request('http://spider3.com')), [])
+        self.assertEqual(self.spider_loader.find_by_request(Request('http://spider3.com/onlythis')), ['spider3'])
 
     def test_load_spider_module(self):
         module = 'tests.test_spiderloader.test_spiders.spider1'
@@ -91,8 +78,7 @@ class SpiderLoaderTest(unittest.TestCase):
         module = 'tests.test_spiderloader.test_spiders.spider1'
         runner = CrawlerRunner({'SPIDER_MODULES': [module]})
 
-        self.assertRaisesRegex(KeyError, 'Spider not found',
-                               runner.create_crawler, 'spider2')
+        self.assertRaisesRegex(KeyError, 'Spider not found', runner.create_crawler, 'spider2')
 
         crawler = runner.create_crawler('spider1')
         self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
@@ -108,8 +94,7 @@ class SpiderLoaderTest(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             module = 'tests.test_spiderloader.test_spiders.doesnotexist'
-            settings = Settings({'SPIDER_MODULES': [module],
-                                 'SPIDER_LOADER_WARN_ONLY': True})
+            settings = Settings({'SPIDER_MODULES': [module], 'SPIDER_LOADER_WARN_ONLY': True})
             spider_loader = SpiderLoader.from_settings(settings)
             self.assertIn("Could not load spiders from module", str(w[0].message))
 
@@ -118,7 +103,6 @@ class SpiderLoaderTest(unittest.TestCase):
 
 
 class DuplicateSpiderNameLoaderTest(unittest.TestCase):
-
     def setUp(self):
         orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
         self.tmpdir = self.mktemp()
@@ -134,8 +118,10 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
 
     def test_dupename_warning(self):
         # copy 1 spider module so as to have duplicate spider name
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider3.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider3dupe.py'))
+        shutil.copyfile(
+            os.path.join(self.tmpdir, 'test_spiders_xxx/spider3.py'),
+            os.path.join(self.tmpdir, 'test_spiders_xxx/spider3dupe.py'),
+        )
 
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)
@@ -156,10 +142,14 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
     def test_multiple_dupename_warning(self):
         # copy 2 spider modules so as to have duplicate spider name
         # This should issue 2 warning, 1 for each duplicate spider name
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider1.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider1dupe.py'))
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider2.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider2dupe.py'))
+        shutil.copyfile(
+            os.path.join(self.tmpdir, 'test_spiders_xxx/spider1.py'),
+            os.path.join(self.tmpdir, 'test_spiders_xxx/spider1dupe.py'),
+        )
+        shutil.copyfile(
+            os.path.join(self.tmpdir, 'test_spiders_xxx/spider2.py'),
+            os.path.join(self.tmpdir, 'test_spiders_xxx/spider2dupe.py'),
+        )
 
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)

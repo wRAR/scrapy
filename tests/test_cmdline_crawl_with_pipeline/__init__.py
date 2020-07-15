@@ -5,7 +5,6 @@ from subprocess import Popen, PIPE
 
 
 class CmdlineCrawlPipelineTest(unittest.TestCase):
-
     def _execute(self, spname):
         args = (sys.executable, '-m', 'scrapy.cmdline', 'crawl', spname)
         cwd = os.path.dirname(os.path.abspath(__file__))

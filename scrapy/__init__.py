@@ -16,8 +16,15 @@ from scrapy.item import Item, Field
 
 
 __all__ = [
-    '__version__', 'version_info', 'twisted_version', 'Spider',
-    'Request', 'FormRequest', 'Selector', 'Item', 'Field',
+    '__version__',
+    'version_info',
+    'twisted_version',
+    'Spider',
+    'Request',
+    'FormRequest',
+    'Selector',
+    'Item',
+    'Field',
 ]
 
 

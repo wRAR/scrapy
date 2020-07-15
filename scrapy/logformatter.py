@@ -66,8 +66,8 @@ class LogFormatter:
                 'referer': referer_str(request),
                 'response_flags': response_flags,
                 # backward compatibility with Scrapy logformatter below 1.4 version
-                'flags': response_flags
-            }
+                'flags': response_flags,
+            },
         }
 
     def scraped(self, item, response, spider):
@@ -76,25 +76,11 @@ class LogFormatter:
             src = response.getErrorMessage()
         else:
             src = response
-        return {
-            'level': logging.DEBUG,
-            'msg': SCRAPEDMSG,
-            'args': {
-                'src': src,
-                'item': item,
-            }
-        }
+        return {'level': logging.DEBUG, 'msg': SCRAPEDMSG, 'args': {'src': src, 'item': item,}}
 
     def dropped(self, item, exception, response, spider):
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
-        return {
-            'level': logging.WARNING,
-            'msg': DROPPEDMSG,
-            'args': {
-                'exception': exception,
-                'item': item,
-            }
-        }
+        return {'level': logging.WARNING, 'msg': DROPPEDMSG, 'args': {'exception': exception, 'item': item,}}
 
     def item_error(self, item, exception, response, spider):
         """Logs a message when an item causes an error while it is passing
@@ -102,13 +88,7 @@ class LogFormatter:
 
         .. versionadded:: 2.0
         """
-        return {
-            'level': logging.ERROR,
-            'msg': ITEMERRORMSG,
-            'args': {
-                'item': item,
-            }
-        }
+        return {'level': logging.ERROR, 'msg': ITEMERRORMSG, 'args': {'item': item,}}
 
     def spider_error(self, failure, request, response, spider):
         """Logs an error message from a spider.
@@ -118,10 +98,7 @@ class LogFormatter:
         return {
             'level': logging.ERROR,
             'msg': SPIDERERRORMSG,
-            'args': {
-                'request': request,
-                'referer': referer_str(request),
-            }
+            'args': {'request': request, 'referer': referer_str(request),},
         }
 
     def download_error(self, failure, request, spider, errmsg=None):

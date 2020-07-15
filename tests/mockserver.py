@@ -48,7 +48,6 @@ class LeafResource(Resource):
 
 
 class Follow(LeafResource):
-
     def render(self, request):
         total = getarg(request, b"total", 100, type=int)
         show = getarg(request, b"show", 1, type=int)
@@ -77,7 +76,6 @@ class Follow(LeafResource):
 
 
 class Delay(LeafResource):
-
     def render_GET(self, request):
         n = getarg(request, b"n", 1, type=float)
         b = getarg(request, b"b", 1, type=int)
@@ -93,7 +91,6 @@ class Delay(LeafResource):
 
 
 class Status(LeafResource):
-
     def render_GET(self, request):
         n = getarg(request, b"n", 200, type=int)
         request.setResponseCode(n)
@@ -101,11 +98,11 @@ class Status(LeafResource):
 
 
 class Raw(LeafResource):
-
     def render_GET(self, request):
         request.startedWriting = 1
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
+
     render_POST = render_GET
 
     def _delayedRender(self, request):
@@ -117,20 +114,19 @@ class Raw(LeafResource):
 
 
 class Echo(LeafResource):
-
     def render_GET(self, request):
         output = {
             'headers': dict(
-                (to_unicode(k), [to_unicode(v) for v in vs])
-                for k, vs in request.requestHeaders.getAllRawHeaders()),
+                (to_unicode(k), [to_unicode(v) for v in vs]) for k, vs in request.requestHeaders.getAllRawHeaders()
+            ),
             'body': to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))
+
     render_POST = render_GET
 
 
 class RedirectTo(LeafResource):
-
     def render(self, request):
         goto = getarg(request, b'goto', b'/')
         # we force the body content, otherwise Twisted redirectTo()
@@ -140,7 +136,6 @@ class RedirectTo(LeafResource):
 
 
 class Partial(LeafResource):
-
     def render_GET(self, request):
         request.setHeader(b"Content-Length", b"1024")
         self.deferRequest(request, 0, self._delayedRender, request)
@@ -152,7 +147,6 @@ class Partial(LeafResource):
 
 
 class Drop(Partial):
-
     def _delayedRender(self, request):
         abort = getarg(request, b"abort", 0, type=int)
         request.write(b"this connection will be dropped\n")
@@ -167,13 +161,11 @@ class Drop(Partial):
 
 
 class ArbitraryLengthPayloadResource(LeafResource):
-
     def render(self, request):
         return request.content.read()
 
 
 class Root(Resource):
-
     def __init__(self):
         Resource.__init__(self)
         self.putChild(b"status", Status())
@@ -188,6 +180,7 @@ class Root(Resource):
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
+
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
         except Exception:
             pass
@@ -201,10 +194,10 @@ class Root(Resource):
 
 
 class MockServer:
-
     def __enter__(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'http'],
-                          stdout=PIPE, env=get_testenv())
+        self.proc = Popen(
+            [sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'http'], stdout=PIPE, env=get_testenv()
+        )
         http_address = self.proc.stdout.readline().strip().decode('ascii')
         https_address = self.proc.stdout.readline().strip().decode('ascii')
 
@@ -244,10 +237,10 @@ class MockDNSResolver:
 
 
 class MockDNSServer:
-
     def __enter__(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
-                          stdout=PIPE, env=get_testenv())
+        self.proc = Popen(
+            [sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'], stdout=PIPE, env=get_testenv()
+        )
         host, port = self.proc.stdout.readline().strip().decode('ascii').split(":")
         self.host = host
         self.port = int(port)
@@ -260,8 +253,7 @@ class MockDNSServer:
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
     factory = ssl.DefaultOpenSSLContextFactory(
-        os.path.join(os.path.dirname(__file__), keyfile),
-        os.path.join(os.path.dirname(__file__), certfile),
+        os.path.join(os.path.dirname(__file__), keyfile), os.path.join(os.path.dirname(__file__), certfile),
     )
     if cipher_string:
         ctx = factory.getContext()

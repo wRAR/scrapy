@@ -8,7 +8,6 @@ from scrapy import signals
 
 
 class DownloadTimeoutMiddleware:
-
     def __init__(self, timeout=180):
         self._timeout = timeout
 

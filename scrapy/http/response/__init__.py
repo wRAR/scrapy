@@ -16,9 +16,9 @@ from scrapy.utils.trackref import object_ref
 
 
 class Response(object_ref):
-
-    def __init__(self, url, status=200, headers=None, body=b'', flags=None,
-                 request=None, certificate=None, ip_address=None):
+    def __init__(
+        self, url, status=200, headers=None, body=b'', flags=None, request=None, certificate=None, ip_address=None
+    ):
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)
@@ -33,20 +33,14 @@ class Response(object_ref):
         try:
             return self.request.cb_kwargs
         except AttributeError:
-            raise AttributeError(
-                "Response.cb_kwargs not available, this response "
-                "is not tied to any request"
-            )
+            raise AttributeError("Response.cb_kwargs not available, this response " "is not tied to any request")
 
     @property
     def meta(self):
         try:
             return self.request.meta
         except AttributeError:
-            raise AttributeError(
-                "Response.meta not available, this response "
-                "is not tied to any request"
-            )
+            raise AttributeError("Response.meta not available, this response " "is not tied to any request")
 
     def _get_url(self):
         return self._url
@@ -55,8 +49,7 @@ class Response(object_ref):
         if isinstance(url, str):
             self._url = url
         else:
-            raise TypeError('%s url must be str, got %s:' %
-                            (type(self).__name__, type(url).__name__))
+            raise TypeError('%s url must be str, got %s:' % (type(self).__name__, type(url).__name__))
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
@@ -68,9 +61,8 @@ class Response(object_ref):
             self._body = b''
         elif not isinstance(body, bytes):
             raise TypeError(
-                "Response body must be bytes. "
-                "If you want to pass unicode body use TextResponse "
-                "or HtmlResponse.")
+                "Response body must be bytes. " "If you want to pass unicode body use TextResponse " "or HtmlResponse."
+            )
         else:
             self._body = body
 
@@ -89,8 +81,7 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'status', 'headers', 'body',
-                  'request', 'flags', 'certificate', 'ip_address']:
+        for x in ['url', 'status', 'headers', 'body', 'request', 'flags', 'certificate', 'ip_address']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -119,9 +110,22 @@ class Response(object_ref):
         """
         raise NotSupported("Response content isn't text")
 
-    def follow(self, url, callback=None, method='GET', headers=None, body=None,
-               cookies=None, meta=None, encoding='utf-8', priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
+    def follow(
+        self,
+        url,
+        callback=None,
+        method='GET',
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding='utf-8',
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+    ):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -158,9 +162,22 @@ class Response(object_ref):
             flags=flags,
         )
 
-    def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,
-                   cookies=None, meta=None, encoding='utf-8', priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None, flags=None):
+    def follow_all(
+        self,
+        urls,
+        callback=None,
+        method='GET',
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding='utf-8',
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+    ):
         # type: (...) -> Generator[Request, None, None]
         """
         .. versionadded:: 2.0

@@ -7,9 +7,16 @@ from itertools import count
 from warnings import catch_warnings
 
 from scrapy.utils.python import (
-    memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, get_func_args, to_bytes, to_unicode,
-    without_none_values, MutableChain)
+    memoizemethod_noargs,
+    binary_is_text,
+    equal_attributes,
+    WeakKeyCache,
+    get_func_args,
+    to_bytes,
+    to_unicode,
+    without_none_values,
+    MutableChain,
+)
 
 
 __doctests__ = ['scrapy.utils.python']
@@ -26,8 +33,7 @@ class MutableChainTest(unittest.TestCase):
         with catch_warnings(record=True) as warnings:
             self.assertEqual(m.next(), 2)
             self.assertEqual(len(warnings), 1)
-            self.assertIn('scrapy.utils.python.MutableChain.__next__',
-                          str(warnings[0].message))
+            self.assertIn('scrapy.utils.python.MutableChain.__next__', str(warnings[0].message))
         self.assertEqual(list(m), list(range(3, 13)))
 
 
@@ -45,10 +51,7 @@ class ToUnicodeTest(unittest.TestCase):
         self.assertRaises(TypeError, to_unicode, 423)
 
     def test_errors_argument(self):
-        self.assertEqual(
-            to_unicode(b'a\xedb', 'utf-8', errors='replace'),
-            u'a\ufffdb'
-        )
+        self.assertEqual(to_unicode(b'a\xedb', 'utf-8', errors='replace'), u'a\ufffdb')
 
 
 class ToBytesTest(unittest.TestCase):
@@ -65,16 +68,12 @@ class ToBytesTest(unittest.TestCase):
         self.assertRaises(TypeError, to_bytes, unittest)
 
     def test_errors_argument(self):
-        self.assertEqual(
-            to_bytes(u'a\ufffdb', 'latin-1', errors='replace'),
-            b'a?b'
-        )
+        self.assertEqual(to_bytes(u'a\ufffdb', 'latin-1', errors='replace'), b'a?b')
 
 
 class MemoizedMethodTest(unittest.TestCase):
     def test_memoizemethod_noargs(self):
         class A:
-
             @memoizemethod_noargs
             def cached(self):
                 return object()
@@ -105,7 +104,6 @@ class BinaryIsTextTest(unittest.TestCase):
 
 
 class UtilsPythonTestCase(unittest.TestCase):
-
     def test_equal_attributes(self):
         class Obj:
             pass
@@ -186,7 +184,6 @@ class UtilsPythonTestCase(unittest.TestCase):
                 pass
 
         class Callable:
-
             def __call__(self, a, b, c):
                 pass
 
@@ -212,18 +209,16 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         else:
-            self.assertEqual(
-                get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
             self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
-            self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
+            self.assertEqual(get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
         self.assertEqual(without_none_values((1, None, 3, 4)), (1, 3, 4))
         self.assertEqual(
-            without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
-            {'one': 1, 'three': 3, 'four': 4})
+            without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}), {'one': 1, 'three': 3, 'four': 4}
+        )
 
 
 if __name__ == "__main__":

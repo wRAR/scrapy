@@ -89,7 +89,8 @@ def guess_scheme(url):
     if parts.scheme:
         return url
     # Note: this does not match Windows filepath
-    if re.match(r'''^                   # start with...
+    if re.match(
+        r'''^                   # start with...
                     (
                         \.              # ...a single dot,
                         (
@@ -98,7 +99,10 @@ def guess_scheme(url):
                     )?      # optional match of ".", ".." or ".blabla"
                     /       # at least one "/" for a file path,
                     .       # and something after the "/"
-                    ''', parts.path, flags=re.VERBOSE):
+                    ''',
+        parts.path,
+        flags=re.VERBOSE,
+    ):
         return any_to_uri(url)
     else:
         return add_http_if_no_scheme(url)
@@ -121,15 +125,15 @@ def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=
     if (strip_credentials or origin_only) and (parsed_url.username or parsed_url.password):
         netloc = netloc.split('@')[-1]
     if strip_default_port and parsed_url.port:
-        if (parsed_url.scheme, parsed_url.port) in (('http', 80),
-                                                    ('https', 443),
-                                                    ('ftp', 21)):
+        if (parsed_url.scheme, parsed_url.port) in (('http', 80), ('https', 443), ('ftp', 21)):
             netloc = netloc.replace(':{p.port}'.format(p=parsed_url), '')
-    return urlunparse((
-        parsed_url.scheme,
-        netloc,
-        '/' if origin_only else parsed_url.path,
-        '' if origin_only else parsed_url.params,
-        '' if origin_only else parsed_url.query,
-        '' if strip_fragment else parsed_url.fragment
-    ))
+    return urlunparse(
+        (
+            parsed_url.scheme,
+            netloc,
+            '/' if origin_only else parsed_url.path,
+            '' if origin_only else parsed_url.params,
+            '' if origin_only else parsed_url.query,
+            '' if strip_fragment else parsed_url.fragment,
+        )
+    )

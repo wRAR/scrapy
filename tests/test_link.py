@@ -4,7 +4,6 @@ from scrapy.link import Link
 
 
 class LinkTest(unittest.TestCase):
-
     def _assert_same_links(self, link1, link2):
         self.assertEqual(link1, link2)
         self.assertEqual(hash(link1), hash(link2))

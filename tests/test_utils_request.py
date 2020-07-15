@@ -9,7 +9,6 @@ from scrapy.utils.request import (
 
 
 class UtilsRequestTest(unittest.TestCase):
-
     def test_request_fingerprint(self):
         r1 = Request("http://www.example.com/query?id=111&cat=222")
         r2 = Request("http://www.example.com/query?cat=222&id=111")
@@ -37,15 +36,14 @@ class UtilsRequestTest(unittest.TestCase):
 
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r2), request_fingerprint(r3))
 
-        self.assertEqual(request_fingerprint(r1),
-                         request_fingerprint(r1, include_headers=['Accept-Language']))
+        self.assertEqual(request_fingerprint(r1), request_fingerprint(r1, include_headers=['Accept-Language']))
 
-        self.assertNotEqual(
-            request_fingerprint(r1),
-            request_fingerprint(r2, include_headers=['Accept-Language']))
+        self.assertNotEqual(request_fingerprint(r1), request_fingerprint(r2, include_headers=['Accept-Language']))
 
-        self.assertEqual(request_fingerprint(r3, include_headers=['accept-language', 'sessionid']),
-                         request_fingerprint(r3, include_headers=['SESSIONID', 'Accept-Language']))
+        self.assertEqual(
+            request_fingerprint(r3, include_headers=['accept-language', 'sessionid']),
+            request_fingerprint(r3, include_headers=['SESSIONID', 'Accept-Language']),
+        )
 
         r1 = Request("http://www.example.com/test.html")
         r2 = Request("http://www.example.com/test.html#fragment")
@@ -80,11 +78,12 @@ class UtilsRequestTest(unittest.TestCase):
         r1 = Request("http://www.example.com/some/page.html?arg=1")
         self.assertEqual(request_httprepr(r1), b'GET /some/page.html?arg=1 HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
 
-        r1 = Request("http://www.example.com", method='POST',
-                     headers={"Content-type": b"text/html"}, body=b"Some body")
+        r1 = Request(
+            "http://www.example.com", method='POST', headers={"Content-type": b"text/html"}, body=b"Some body"
+        )
         self.assertEqual(
             request_httprepr(r1),
-            b'POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body'
+            b'POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body',
         )
 
     def test_request_httprepr_for_non_http_request(self):

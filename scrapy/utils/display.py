@@ -13,6 +13,7 @@ def _colorize(text, colorize=True):
         from pygments import highlight
         from pygments.formatters import TerminalFormatter
         from pygments.lexers import PythonLexer
+
         return highlight(text, PythonLexer(), TerminalFormatter())
     except ImportError:
         return text

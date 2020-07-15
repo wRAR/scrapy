@@ -12,11 +12,13 @@ def _get_boto_connection():
 
     class _v19_S3Connection(S3Connection):
         """A dummy S3Connection wrapper that doesn't do any synchronous download"""
+
         def _mexe(self, method, bucket, key, headers, *args, **kwargs):
             return headers
 
     class _v20_S3Connection(S3Connection):
         """A dummy S3Connection wrapper that doesn't do any synchronous download"""
+
         def _mexe(self, http_request, *args, **kwargs):
             http_request.authorize(connection=self)
             return http_request.headers
@@ -32,11 +34,16 @@ def _get_boto_connection():
 
 
 class S3DownloadHandler:
-
-    def __init__(self, settings, *,
-                 crawler=None,
-                 aws_access_key_id=None, aws_secret_access_key=None,
-                 httpdownloadhandler=HTTPDownloadHandler, **kw):
+    def __init__(
+        self,
+        settings,
+        *,
+        crawler=None,
+        aws_access_key_id=None,
+        aws_secret_access_key=None,
+        httpdownloadhandler=HTTPDownloadHandler,
+        **kw
+    ):
         if not aws_access_key_id:
             aws_access_key_id = settings['AWS_ACCESS_KEY_ID']
         if not aws_secret_access_key:
@@ -54,26 +61,21 @@ class S3DownloadHandler:
         if is_botocore():
             import botocore.auth
             import botocore.credentials
+
             kw.pop('anon', None)
             if kw:
                 raise TypeError('Unexpected keyword arguments: %s' % kw)
             if not self.anon:
                 SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
-                self._signer = SignerCls(botocore.credentials.Credentials(
-                    aws_access_key_id, aws_secret_access_key))
+                self._signer = SignerCls(botocore.credentials.Credentials(aws_access_key_id, aws_secret_access_key))
         else:
             _S3Connection = _get_boto_connection()
             try:
-                self.conn = _S3Connection(
-                    aws_access_key_id, aws_secret_access_key, **kw)
+                self.conn = _S3Connection(aws_access_key_id, aws_secret_access_key, **kw)
             except Exception as ex:
                 raise NotConfigured(str(ex))
 
-        _http_handler = create_instance(
-            objcls=httpdownloadhandler,
-            settings=settings,
-            crawler=crawler,
-        )
+        _http_handler = create_instance(objcls=httpdownloadhandler, settings=settings, crawler=crawler,)
         self._download_http = _http_handler.download_request
 
     @classmethod
@@ -90,14 +92,15 @@ class S3DownloadHandler:
             request = request.replace(url=url)
         elif self._signer is not None:
             import botocore.awsrequest
+
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
                 url='%s://s3.amazonaws.com/%s%s' % (scheme, bucket, path),
                 headers=request.headers.to_unicode_dict(),
-                data=request.body)
+                data=request.body,
+            )
             self._signer.add_auth(awsrequest)
-            request = request.replace(
-                url=url, headers=awsrequest.headers.items())
+            request = request.replace(url=url, headers=awsrequest.headers.items())
         else:
             signed_headers = self.conn.make_request(
                 method=request.method,

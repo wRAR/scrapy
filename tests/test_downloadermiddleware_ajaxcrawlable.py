@@ -36,9 +36,7 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
 
     def test_ajaxcrawl(self):
         req, resp = self._req_resp(
-            'http://example.com/',
-            {'meta': {'foo': 'bar'}},
-            {'body': self._ajaxcrawlable_body()}
+            'http://example.com/', {'meta': {'foo': 'bar'}}, {'body': self._ajaxcrawlable_body()}
         )
         req2 = self.mw.process_response(req, resp, self.spider)
         self.assertEqual(req2.url, 'http://example.com/?_escaped_fragment_=')

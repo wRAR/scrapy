@@ -4,7 +4,6 @@ from scrapy.utils.misc import is_generator_with_return_value
 
 
 class UtilsMiscPy3TestCase(unittest.TestCase):
-
     def test_generators_with_return_statements(self):
         def f():
             yield 1

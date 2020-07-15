@@ -19,10 +19,7 @@ def _isiterable(possible_iterator):
 
 
 def _fname(f):
-    return "{}.{}".format(
-        f.__self__.__class__.__name__,
-        f.__func__.__name__
-    )
+    return "{}.{}".format(f.__self__.__class__.__name__, f.__func__.__name__)
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
@@ -45,7 +42,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self.methods['process_spider_exception'].appendleft(process_spider_exception)
 
     def scrape_response(self, scrape_func, response, request, spider):
-
         def process_spider_input(response):
             for method in self.methods['process_spider_input']:
                 try:

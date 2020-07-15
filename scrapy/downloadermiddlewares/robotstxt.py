@@ -50,8 +50,7 @@ class RobotsTxtMiddleware:
         if not useragent:
             useragent = request.headers.get(b'User-Agent', self._default_useragent)
         if not rp.allowed(request.url, useragent):
-            logger.debug("Forbidden by robots.txt: %(request)s",
-                         {'request': request}, extra={'spider': spider})
+            logger.debug("Forbidden by robots.txt: %(request)s", {'request': request}, extra={'spider': spider})
             self.crawler.stats.inc_value('robotstxt/forbidden')
             raise IgnoreRequest("Forbidden by robots.txt")
 
@@ -62,11 +61,7 @@ class RobotsTxtMiddleware:
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
             robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
-            robotsreq = Request(
-                robotsurl,
-                priority=self.DOWNLOAD_PRIORITY,
-                meta={'dont_obey_robotstxt': True}
-            )
+            robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY, meta={'dont_obey_robotstxt': True})
             dfd = self.crawler.engine.download(robotsreq, spider)
             dfd.addCallback(self._parse_robots, netloc, spider)
             dfd.addErrback(self._logerror, robotsreq, spider)
@@ -79,6 +74,7 @@ class RobotsTxtMiddleware:
             def cb(result):
                 d.callback(result)
                 return result
+
             self._parsers[netloc].addCallback(cb)
             return d
         else:
@@ -86,10 +82,12 @@ class RobotsTxtMiddleware:
 
     def _logerror(self, failure, request, spider):
         if failure.type is not IgnoreRequest:
-            logger.error("Error downloading %(request)s: %(f_exception)s",
-                         {'request': request, 'f_exception': failure.value},
-                         exc_info=failure_to_exc_info(failure),
-                         extra={'spider': spider})
+            logger.error(
+                "Error downloading %(request)s: %(f_exception)s",
+                {'request': request, 'f_exception': failure.value},
+                exc_info=failure_to_exc_info(failure),
+                extra={'spider': spider},
+            )
         return failure
 
     def _parse_robots(self, response, netloc, spider):

@@ -37,13 +37,16 @@ class BaseRedirectMiddleware:
             redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + [reason]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
-            logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
-                         {'reason': reason, 'redirected': redirected, 'request': request},
-                         extra={'spider': spider})
+            logger.debug(
+                "Redirecting (%(reason)s) to %(redirected)s from %(request)s",
+                {'reason': reason, 'redirected': redirected, 'request': request},
+                extra={'spider': spider},
+            )
             return redirected
         else:
-            logger.debug("Discarding %(request)s: max redirections reached",
-                         {'request': request}, extra={'spider': spider})
+            logger.debug(
+                "Discarding %(request)s: max redirections reached", {'request': request}, extra={'spider': spider}
+            )
             raise IgnoreRequest("max redirections reached")
 
     def _redirect_request_using_get(self, request, redirect_url):
@@ -104,8 +107,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
         ):
             return response
 
-        interval, url = get_meta_refresh(response,
-                                         ignore_tags=self._ignore_tags)
+        interval, url = get_meta_refresh(response, ignore_tags=self._ignore_tags)
         if url and interval < self._maxdelay:
             redirected = self._redirect_request_using_get(request, url)
             return self._redirect(redirected, request, spider, 'meta refresh')

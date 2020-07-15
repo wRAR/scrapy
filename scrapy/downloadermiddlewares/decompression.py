@@ -21,12 +21,7 @@ class DecompressionMiddleware:
     responses that may arrive. """
 
     def __init__(self):
-        self._formats = {
-            'tar': self._is_tar,
-            'zip': self._is_zip,
-            'gz': self._is_gzip,
-            'bz2': self._is_bzip2
-        }
+        self._formats = {'tar': self._is_tar, 'zip': self._is_zip, 'gz': self._is_gzip, 'bz2': self._is_bzip2}
 
     def _is_tar(self, response):
         archive = BytesIO(response.body)
@@ -77,7 +72,10 @@ class DecompressionMiddleware:
         for fmt, func in self._formats.items():
             new_response = func(response)
             if new_response:
-                logger.debug('Decompressed response with format: %(responsefmt)s',
-                             {'responsefmt': fmt}, extra={'spider': spider})
+                logger.debug(
+                    'Decompressed response with format: %(responsefmt)s',
+                    {'responsefmt': fmt},
+                    extra={'spider': spider},
+                )
                 return new_response
         return response

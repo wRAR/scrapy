@@ -10,7 +10,6 @@ from scrapy.loader.common import wrap_loader_context
 
 
 class MapCompose:
-
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
         self.default_loader_context = default_loader_context
@@ -28,16 +27,15 @@ class MapCompose:
                 try:
                     next_values += arg_to_iter(func(v))
                 except Exception as e:
-                    raise ValueError("Error in MapCompose with "
-                                     "%s value=%r error='%s: %s'" %
-                                     (str(func), value, type(e).__name__,
-                                      str(e)))
+                    raise ValueError(
+                        "Error in MapCompose with "
+                        "%s value=%r error='%s: %s'" % (str(func), value, type(e).__name__, str(e))
+                    )
             values = next_values
         return values
 
 
 class Compose:
-
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
         self.stop_on_none = default_loader_context.get('stop_on_none', True)
@@ -55,14 +53,14 @@ class Compose:
             try:
                 value = func(value)
             except Exception as e:
-                raise ValueError("Error in Compose with "
-                                 "%s value=%r error='%s: %s'" %
-                                 (str(func), value, type(e).__name__, str(e)))
+                raise ValueError(
+                    "Error in Compose with "
+                    "%s value=%r error='%s: %s'" % (str(func), value, type(e).__name__, str(e))
+                )
         return value
 
 
 class TakeFirst:
-
     def __call__(self, values):
         for value in values:
             if value is not None and value != '':
@@ -70,7 +68,6 @@ class TakeFirst:
 
 
 class Identity:
-
     def __call__(self, values):
         return values
 
@@ -82,9 +79,11 @@ class SelectJmes:
         Requires : jmespath(https://github.com/jmespath/jmespath)
         Note: SelectJmes accepts only one input element at a time.
     """
+
     def __init__(self, json_path):
         self.json_path = json_path
         import jmespath
+
         self.compiled_path = jmespath.compile(self.json_path)
 
     def __call__(self, value):
@@ -96,7 +95,6 @@ class SelectJmes:
 
 
 class Join:
-
     def __init__(self, separator=u' '):
         self.separator = separator
 

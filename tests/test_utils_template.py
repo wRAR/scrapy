@@ -9,7 +9,6 @@ __doctests__ = ['scrapy.utils.template']
 
 
 class UtilsRenderTemplateFileTestCase(unittest.TestCase):
-
     def setUp(self):
         self.tmp_path = mkdtemp()
 

@@ -26,12 +26,11 @@ class Command(ScrapyCommand):
 
 
 class _BenchServer:
-
     def __enter__(self):
         from scrapy.utils.test import get_testenv
+
         pargs = [sys.executable, '-u', '-m', 'scrapy.utils.benchserver']
-        self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
-                                     env=get_testenv())
+        self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE, env=get_testenv())
         self.proc.stdout.readline()
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -42,6 +41,7 @@ class _BenchServer:
 
 class _BenchSpider(scrapy.Spider):
     """A spider that follows all links"""
+
     name = 'follow'
     total = 10000
     show = 20

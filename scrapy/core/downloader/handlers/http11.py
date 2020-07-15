@@ -39,6 +39,7 @@ class HTTP11DownloadHandler:
         self._crawler = crawler
 
         from twisted.internet import reactor
+
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
@@ -48,23 +49,19 @@ class HTTP11DownloadHandler:
         # try method-aware context factory
         try:
             self._contextFactory = create_instance(
-                objcls=self._contextFactoryClass,
-                settings=settings,
-                crawler=crawler,
-                method=self._sslMethod,
+                objcls=self._contextFactoryClass, settings=settings, crawler=crawler, method=self._sslMethod,
             )
         except TypeError:
             # use context factory defaults
             self._contextFactory = create_instance(
-                objcls=self._contextFactoryClass,
-                settings=settings,
-                crawler=crawler,
+                objcls=self._contextFactoryClass, settings=settings, crawler=crawler,
             )
             msg = """
  '%s' does not accept `method` argument (type OpenSSL.SSL method,\
  e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
  Please upgrade your context factory class to handle them or ignore them.""" % (
-                settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
+                settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],
+            )
             warnings.warn(msg)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
@@ -89,6 +86,7 @@ class HTTP11DownloadHandler:
 
     def close(self):
         from twisted.internet import reactor
+
         d = self._pool.closeCachedConnections()
         # closeCachedConnections will hang on network or server issues, so
         # we'll manually timeout the deferred.
@@ -164,13 +162,12 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             self._tunnelReadyDeferred.callback(self._protocol)
         else:
             if respm:
-                extra = {'status': int(respm.group('status')),
-                         'reason': respm.group('reason').strip()}
+                extra = {'status': int(respm.group('status')), 'reason': respm.group('reason').strip()}
             else:
                 extra = rcvd_bytes[:32]
             self._tunnelReadyDeferred.errback(
-                TunnelError('Could not open CONNECT tunnel with proxy %s:%s [%r]' % (
-                    self._host, self._port, extra)))
+                TunnelError('Could not open CONNECT tunnel with proxy %s:%s [%r]' % (self._host, self._port, extra))
+            )
 
     def connectFailed(self, reason):
         """Propagates the errback to the appropriate deferred."""
@@ -213,8 +210,7 @@ class TunnelingAgent(Agent):
     proxy involved.
     """
 
-    def __init__(self, reactor, proxyConf, contextFactory=None,
-                 connectTimeout=None, bindAddress=None, pool=None):
+    def __init__(self, reactor, proxyConf, contextFactory=None, connectTimeout=None, bindAddress=None, pool=None):
         super(TunnelingAgent, self).__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
         self._proxyConf = proxyConf
         self._contextFactory = contextFactory
@@ -247,13 +243,9 @@ class TunnelingAgent(Agent):
 
 
 class ScrapyProxyAgent(Agent):
-
     def __init__(self, reactor, proxyURI, connectTimeout=None, bindAddress=None, pool=None):
         super(ScrapyProxyAgent, self).__init__(
-            reactor=reactor,
-            connectTimeout=connectTimeout,
-            bindAddress=bindAddress,
-            pool=pool,
+            reactor=reactor, connectTimeout=connectTimeout, bindAddress=bindAddress, pool=pool,
         )
         self._proxyURI = URI.fromBytes(proxyURI)
 
@@ -280,8 +272,17 @@ class ScrapyAgent:
     _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
 
-    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
-                 maxsize=0, warnsize=0, fail_on_dataloss=True, crawler=None):
+    def __init__(
+        self,
+        contextFactory=None,
+        connectTimeout=10,
+        bindAddress=None,
+        pool=None,
+        maxsize=0,
+        warnsize=0,
+        fail_on_dataloss=True,
+        crawler=None,
+    ):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
@@ -294,6 +295,7 @@ class ScrapyAgent:
 
     def _get_agent(self, request, timeout):
         from twisted.internet import reactor
+
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
@@ -302,11 +304,13 @@ class ScrapyAgent:
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
             if omitConnectTunnel:
-                warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
-                              "If you use Crawlera, it doesn't require this mode anymore, "
-                              "so you should update scrapy-crawlera to 1.3.0+ "
-                              "and remove '?noconnect' from the Crawlera URL.",
-                              ScrapyDeprecationWarning)
+                warnings.warn(
+                    "Using HTTPS proxies in the noconnect mode is deprecated. "
+                    "If you use Crawlera, it doesn't require this mode anymore, "
+                    "so you should update scrapy-crawlera to 1.3.0+ "
+                    "and remove '?noconnect' from the Crawlera URL.",
+                    ScrapyDeprecationWarning,
+                )
             if scheme == b'https' and not omitConnectTunnel:
                 proxyAuth = request.headers.get(b'Proxy-Authorization', None)
                 proxyConf = (proxyHost, proxyPort, proxyAuth)
@@ -337,6 +341,7 @@ class ScrapyAgent:
 
     def download_request(self, request):
         from twisted.internet import reactor
+
         timeout = request.meta.get('download_timeout') or self._connectTimeout
         agent = self._get_agent(request, timeout)
 
@@ -394,8 +399,10 @@ class ScrapyAgent:
         fail_on_dataloss = request.meta.get('download_fail_on_dataloss', self._fail_on_dataloss)
 
         if maxsize and expected_size > maxsize:
-            error_msg = ("Cancelling download of %(url)s: expected response "
-                         "size (%(size)s) larger than download max size (%(maxsize)s).")
+            error_msg = (
+                "Cancelling download of %(url)s: expected response "
+                "size (%(size)s) larger than download max size (%(maxsize)s)."
+            )
             error_args = {'url': request.url, 'size': expected_size, 'maxsize': maxsize}
 
             logger.error(error_msg, error_args)
@@ -403,9 +410,11 @@ class ScrapyAgent:
             raise defer.CancelledError(error_msg % error_args)
 
         if warnsize and expected_size > warnsize:
-            logger.warning("Expected response size (%(size)s) larger than "
-                           "download warn size (%(warnsize)s) in request %(request)s.",
-                           {'size': expected_size, 'warnsize': warnsize, 'request': request})
+            logger.warning(
+                "Expected response size (%(size)s) larger than "
+                "download warn size (%(warnsize)s) in request %(request)s.",
+                {'size': expected_size, 'warnsize': warnsize, 'request': request},
+            )
 
         def _cancel(_):
             # Abort connection immediately.
@@ -449,7 +458,6 @@ class ScrapyAgent:
 
 @implementer(IBodyProducer)
 class _RequestBodyProducer:
-
     def __init__(self, body):
         self.body = body
         self.length = len(body)
@@ -466,7 +474,6 @@ class _RequestBodyProducer:
 
 
 class _ResponseReader(protocol.Protocol):
-
     def __init__(self, finished, txresponse, request, maxsize, warnsize, fail_on_dataloss, crawler):
         self._finished = finished
         self._txresponse = txresponse
@@ -483,14 +490,16 @@ class _ResponseReader(protocol.Protocol):
         self._crawler = crawler
 
     def _finish_response(self, flags=None, failure=None):
-        self._finished.callback({
-            "txresponse": self._txresponse,
-            "body": self._bodybuf.getvalue(),
-            "flags": flags,
-            "certificate": self._certificate,
-            "ip_address": self._ip_address,
-            "failure": failure,
-        })
+        self._finished.callback(
+            {
+                "txresponse": self._txresponse,
+                "body": self._bodybuf.getvalue(),
+                "flags": flags,
+                "certificate": self._certificate,
+                "ip_address": self._ip_address,
+                "failure": failure,
+            }
+        )
 
     def connectionMade(self):
         if self._certificate is None:
@@ -509,35 +518,33 @@ class _ResponseReader(protocol.Protocol):
         self._bytes_received += len(bodyBytes)
 
         bytes_received_result = self._crawler.signals.send_catch_log(
-            signal=signals.bytes_received,
-            data=bodyBytes,
-            request=self._request,
-            spider=self._crawler.spider,
+            signal=signals.bytes_received, data=bodyBytes, request=self._request, spider=self._crawler.spider,
         )
         for handler, result in bytes_received_result:
             if isinstance(result, Failure) and isinstance(result.value, StopDownload):
-                logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
-                             {"request": self._request, "handler": handler.__qualname__})
+                logger.debug(
+                    "Download stopped for %(request)s from signal handler %(handler)s",
+                    {"request": self._request, "handler": handler.__qualname__},
+                )
                 self.transport._producer.loseConnection()
                 failure = result if result.value.fail else None
                 self._finish_response(flags=["download_stopped"], failure=failure)
 
         if self._maxsize and self._bytes_received > self._maxsize:
-            logger.error("Received (%(bytes)s) bytes larger than download "
-                         "max size (%(maxsize)s) in request %(request)s.",
-                         {'bytes': self._bytes_received,
-                          'maxsize': self._maxsize,
-                          'request': self._request})
+            logger.error(
+                "Received (%(bytes)s) bytes larger than download " "max size (%(maxsize)s) in request %(request)s.",
+                {'bytes': self._bytes_received, 'maxsize': self._maxsize, 'request': self._request},
+            )
             # Clear buffer earlier to avoid keeping data in memory for a long time.
             self._bodybuf.truncate(0)
             self._finished.cancel()
 
         if self._warnsize and self._bytes_received > self._warnsize and not self._reached_warnsize:
             self._reached_warnsize = True
-            logger.warning("Received more bytes than download "
-                           "warn size (%(warnsize)s) in request %(request)s.",
-                           {'warnsize': self._warnsize,
-                            'request': self._request})
+            logger.warning(
+                "Received more bytes than download " "warn size (%(warnsize)s) in request %(request)s.",
+                {'warnsize': self._warnsize, 'request': self._request},
+            )
 
     def connectionLost(self, reason):
         if self._finished.called:
@@ -557,10 +564,12 @@ class _ResponseReader(protocol.Protocol):
                 return
 
             elif not self._fail_on_dataloss_warned:
-                logger.warning("Got data loss in %s. If you want to process broken "
-                               "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
-                               " -- This message won't be shown in further requests",
-                               self._txresponse.request.absoluteURI.decode())
+                logger.warning(
+                    "Got data loss in %s. If you want to process broken "
+                    "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
+                    " -- This message won't be shown in further requests",
+                    self._txresponse.request.absoluteURI.decode(),
+                )
                 self._fail_on_dataloss_warned = True
 
         self._finished.errback(reason)

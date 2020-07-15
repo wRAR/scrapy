@@ -109,6 +109,7 @@ class ContractsManager:
 
 class Contract:
     """ Abstract class for contracts """
+
     request_cls = None
 
     def __init__(self, method, *args):

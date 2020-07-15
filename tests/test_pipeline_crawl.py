@@ -25,9 +25,8 @@ class MediaDownloadSpider(SimpleSpider):
             self.media_key: [],
             self.media_urls_key: [
                 self._process_url(response.urljoin(href))
-                for href in response.xpath(
-                    '//table[thead/tr/th="Filename"]/tbody//a/@href'
-                ).getall()],
+                for href in response.xpath('//table[thead/tr/th="Filename"]/tbody//a/@href').getall()
+            ],
         }
         yield item
 
@@ -54,7 +53,8 @@ class FileDownloadCrawlTestCase(TestCase):
     expected_checksums = {
         '5547178b89448faf0015a13f904c936e',
         'c2281c83670e31d8aaab7cb642b824db',
-        'ed3f6538dc15d4d9179dae57319edc5f'}
+        'ed3f6538dc15d4d9179dae57319edc5f',
+    }
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -98,19 +98,13 @@ class FileDownloadCrawlTestCase(TestCase):
 
         # check that the images/files checksums are what we know they should be
         if self.expected_checksums is not None:
-            checksums = set(
-                i['checksum']
-                for item in items
-                for i in item[self.media_key]
-            )
+            checksums = set(i['checksum'] for item in items for i in item[self.media_key])
             self.assertEqual(checksums, self.expected_checksums)
 
         # check that the image files where actually written to the media store
         for item in items:
             for i in item[self.media_key]:
-                self.assertTrue(
-                    os.path.exists(
-                        os.path.join(self.tmpmediastore, i['path'])))
+                self.assertTrue(os.path.exists(os.path.join(self.tmpmediastore, i['path'])))
 
     def _assert_files_download_failure(self, crawler, items, code, logs):
 
@@ -137,9 +131,8 @@ class FileDownloadCrawlTestCase(TestCase):
         crawler = self._create_crawler(MediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
-                media_key=self.media_key,
-                media_urls_key=self.media_urls_key)
+                self.mockserver.url("/files/images/"), media_key=self.media_key, media_urls_key=self.media_urls_key
+            )
         self._assert_files_downloaded(self.items, str(log))
 
     @defer.inlineCallbacks
@@ -147,9 +140,8 @@ class FileDownloadCrawlTestCase(TestCase):
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
-                media_key=self.media_key,
-                media_urls_key=self.media_urls_key)
+                self.mockserver.url("/files/images/"), media_key=self.media_key, media_urls_key=self.media_urls_key
+            )
         self._assert_files_download_failure(crawler, self.items, 404, str(log))
 
     @defer.inlineCallbacks
@@ -160,7 +152,8 @@ class FileDownloadCrawlTestCase(TestCase):
                 self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                mockserver=self.mockserver)
+                mockserver=self.mockserver,
+            )
         self._assert_files_download_failure(crawler, self.items, 302, str(log))
 
     @defer.inlineCallbacks
@@ -175,7 +168,8 @@ class FileDownloadCrawlTestCase(TestCase):
                 self.mockserver.url("/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                mockserver=self.mockserver)
+                mockserver=self.mockserver,
+            )
         self._assert_files_downloaded(self.items, str(log))
         self.assertEqual(crawler.stats.get_value('downloader/response_status_count/302'), 3)
 

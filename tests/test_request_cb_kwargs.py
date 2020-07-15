@@ -12,6 +12,7 @@ class InjectArgumentsDownloaderMiddleware:
     """
     Make sure downloader middlewares are able to update the keyword arguments
     """
+
     def process_request(self, request, spider):
         if request.callback.__name__ == 'parse_downloader_mw':
             request.cb_kwargs['from_process_request'] = True
@@ -27,6 +28,7 @@ class InjectArgumentsSpiderMiddleware:
     """
     Make sure spider middlewares are able to update the keyword arguments
     """
+
     def process_start_requests(self, start_requests, spider):
         for request in start_requests:
             if request.callback.__name__ == 'parse_spider_mw':
@@ -49,12 +51,8 @@ class InjectArgumentsSpiderMiddleware:
 class KeywordArgumentsSpider(MockServerSpider):
     name = 'kwargs'
     custom_settings = {
-        'DOWNLOADER_MIDDLEWARES': {
-            __name__ + '.InjectArgumentsDownloaderMiddleware': 750,
-        },
-        'SPIDER_MIDDLEWARES': {
-            __name__ + '.InjectArgumentsSpiderMiddleware': 750,
-        },
+        'DOWNLOADER_MIDDLEWARES': {__name__ + '.InjectArgumentsDownloaderMiddleware': 750,},
+        'SPIDER_MIDDLEWARES': {__name__ + '.InjectArgumentsSpiderMiddleware': 750,},
     }
 
     checks = list()
@@ -75,10 +73,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.checks.append(key == 'value')
         self.checks.append(number == 123)
         self.crawler.stats.inc_value('boolean_checks', 2)
-        yield response.follow(
-            self.mockserver.url('/two'),
-            self.parse_second,
-            cb_kwargs={'new_key': 'new_value'})
+        yield response.follow(self.mockserver.url('/two'), self.parse_second, cb_kwargs={'new_key': 'new_value'})
 
     def parse_second(self, response, new_key):
         self.checks.append(new_key == 'new_value')
@@ -159,11 +154,10 @@ class CallbackKeywordArgumentsTestCase(TestCase):
                     exceptions[key] = line
         self.assertEqual(exceptions['takes_less'].exc_info[0], TypeError)
         self.assertEqual(
-            str(exceptions['takes_less'].exc_info[1]),
-            "parse_takes_less() got an unexpected keyword argument 'number'"
+            str(exceptions['takes_less'].exc_info[1]), "parse_takes_less() got an unexpected keyword argument 'number'"
         )
         self.assertEqual(exceptions['takes_more'].exc_info[0], TypeError)
         self.assertEqual(
             str(exceptions['takes_more'].exc_info[1]),
-            "parse_takes_more() missing 1 required positional argument: 'other'"
+            "parse_takes_more() missing 1 required positional argument: 'other'",
         )

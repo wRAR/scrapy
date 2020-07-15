@@ -9,7 +9,10 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from w3lib.form import *  # noqa: F401
 
 
-warnings.warn("Module `scrapy.utils.multipart` is deprecated. "
-              "If you're using `encode_multipart` function, please use "
-              "`urllib3.filepost.encode_multipart_formdata` instead",
-              ScrapyDeprecationWarning, stacklevel=2)
+warnings.warn(
+    "Module `scrapy.utils.multipart` is deprecated. "
+    "If you're using `encode_multipart` function, please use "
+    "`urllib3.filepost.encode_multipart_formdata` instead",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)

@@ -18,13 +18,19 @@ from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
-__all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
-           'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',
-           'JsonItemExporter', 'MarshalItemExporter']
+__all__ = [
+    'BaseItemExporter',
+    'PprintItemExporter',
+    'PickleItemExporter',
+    'CsvItemExporter',
+    'XmlItemExporter',
+    'JsonLinesItemExporter',
+    'JsonItemExporter',
+    'MarshalItemExporter',
+]
 
 
 class BaseItemExporter:
-
     def __init__(self, *, dont_fail=False, **kwargs):
         self._kwargs = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
@@ -85,7 +91,6 @@ class BaseItemExporter:
 
 
 class JsonLinesItemExporter(BaseItemExporter):
-
     def __init__(self, file, **kwargs):
         super().__init__(dont_fail=True, **kwargs)
         self.file = file
@@ -99,7 +104,6 @@ class JsonLinesItemExporter(BaseItemExporter):
 
 
 class JsonItemExporter(BaseItemExporter):
-
     def __init__(self, file, **kwargs):
         super().__init__(dont_fail=True, **kwargs)
         self.file = file
@@ -136,7 +140,6 @@ class JsonItemExporter(BaseItemExporter):
 
 
 class XmlItemExporter(BaseItemExporter):
-
     def __init__(self, file, **kwargs):
         self.item_element = kwargs.pop('item_element', 'item')
         self.root_element = kwargs.pop('root_element', 'items')
@@ -194,7 +197,6 @@ class XmlItemExporter(BaseItemExporter):
 
 
 class CsvItemExporter(BaseItemExporter):
-
     def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         super().__init__(dont_fail=True, **kwargs)
         if not self.encoding:
@@ -205,7 +207,7 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            newline='',  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
         )
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
@@ -228,8 +230,7 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
-        fields = self._get_serialized_fields(item, default_value='',
-                                             include_empty=True)
+        fields = self._get_serialized_fields(item, default_value='', include_empty=True)
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
 
@@ -254,7 +255,6 @@ class CsvItemExporter(BaseItemExporter):
 
 
 class PickleItemExporter(BaseItemExporter):
-
     def __init__(self, file, protocol=4, **kwargs):
         super().__init__(**kwargs)
         self.file = file
@@ -283,7 +283,6 @@ class MarshalItemExporter(BaseItemExporter):
 
 
 class PprintItemExporter(BaseItemExporter):
-
     def __init__(self, file, **kwargs):
         super().__init__(**kwargs)
         self.file = file
@@ -308,8 +307,8 @@ class PythonItemExporter(BaseItemExporter):
         super(PythonItemExporter, self)._configure(options, dont_fail)
         if self.binary:
             warnings.warn(
-                "PythonItemExporter will drop support for binary export in the future",
-                ScrapyDeprecationWarning)
+                "PythonItemExporter will drop support for binary export in the future", ScrapyDeprecationWarning
+            )
         if not self.encoding:
             self.encoding = 'utf-8'
 

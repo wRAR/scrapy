@@ -66,17 +66,13 @@ class ItemLoader:
     def nested_xpath(self, xpath, **context):
         selector = self.selector.xpath(xpath)
         context.update(selector=selector)
-        subloader = self.__class__(
-            item=self.item, parent=self, **context
-        )
+        subloader = self.__class__(item=self.item, parent=self, **context)
         return subloader
 
     def nested_css(self, css, **context):
         selector = self.selector.css(css)
         context.update(selector=selector)
-        subloader = self.__class__(
-            item=self.item, parent=self, **context
-        )
+        subloader = self.__class__(item=self.item, parent=self, **context)
         return subloader
 
     def add_value(self, field_name, value, *processors, **kw):
@@ -123,9 +119,10 @@ class ItemLoader:
             try:
                 value = proc(value)
             except Exception as e:
-                raise ValueError("Error with processor %s value=%r error='%s: %s'" %
-                                 (_proc.__class__.__name__, value,
-                                  type(e).__name__, str(e)))
+                raise ValueError(
+                    "Error with processor %s value=%r error='%s: %s'"
+                    % (_proc.__class__.__name__, value, type(e).__name__, str(e))
+                )
         return value
 
     def load_item(self):
@@ -142,8 +139,10 @@ class ItemLoader:
         try:
             return proc(self._values[field_name])
         except Exception as e:
-            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" %
-                             (field_name, self._values[field_name], type(e).__name__, str(e)))
+            raise ValueError(
+                "Error with output processor: field=%r value=%r error='%s: %s'"
+                % (field_name, self._values[field_name], type(e).__name__, str(e))
+            )
 
     def get_collected_values(self, field_name):
         return self._values[field_name]
@@ -151,15 +150,13 @@ class ItemLoader:
     def get_input_processor(self, field_name):
         proc = getattr(self, '%s_in' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'input_processor',
-                                             self.default_input_processor)
+            proc = self._get_item_field_attr(field_name, 'input_processor', self.default_input_processor)
         return unbound_method(proc)
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'output_processor',
-                                             self.default_output_processor)
+            proc = self._get_item_field_attr(field_name, 'output_processor', self.default_output_processor)
         return unbound_method(proc)
 
     def _process_input_value(self, field_name, value):
@@ -171,8 +168,8 @@ class ItemLoader:
         except Exception as e:
             raise ValueError(
                 "Error with input processor %s: field=%r value=%r "
-                "error='%s: %s'" % (_proc.__class__.__name__, field_name,
-                                    value, type(e).__name__, str(e)))
+                "error='%s: %s'" % (_proc.__class__.__name__, field_name, value, type(e).__name__, str(e))
+            )
 
     def _get_item_field_attr(self, field_name, key, default=None):
         field_meta = ItemAdapter(self.item).get_field_meta(field_name)
@@ -180,9 +177,11 @@ class ItemLoader:
 
     def _check_selector_method(self):
         if self.selector is None:
-            raise RuntimeError("To use XPath or CSS selectors, "
-                               "%s must be instantiated with a selector "
-                               "or a response" % self.__class__.__name__)
+            raise RuntimeError(
+                "To use XPath or CSS selectors, "
+                "%s must be instantiated with a selector "
+                "or a response" % self.__class__.__name__
+            )
 
     def add_xpath(self, field_name, xpath, *processors, **kw):
         values = self._get_xpathvalues(xpath, **kw)

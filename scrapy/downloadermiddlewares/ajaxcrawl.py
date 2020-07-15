@@ -47,9 +47,11 @@ class AjaxCrawlMiddleware:
 
         # scrapy already handles #! links properly
         ajax_crawl_request = request.replace(url=request.url + '#!')
-        logger.debug("Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
-                     {'ajax_crawl_request': ajax_crawl_request, 'request': request},
-                     extra={'spider': spider})
+        logger.debug(
+            "Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
+            {'ajax_crawl_request': ajax_crawl_request, 'request': request},
+            extra={'spider': spider},
+        )
 
         ajax_crawl_request.meta['ajax_crawlable'] = True
         return ajax_crawl_request
@@ -59,7 +61,7 @@ class AjaxCrawlMiddleware:
         Return True if a page without hash fragment could be "AJAX crawlable"
         according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
         """
-        body = response.text[:self.lookup_bytes]
+        body = response.text[: self.lookup_bytes]
         return _has_ajaxcrawlable_meta(body)
 
 

@@ -24,7 +24,6 @@ FORMAT = {
 
 
 class HttpCompressionTest(TestCase):
-
     def setUp(self):
         self.spider = Spider('foo')
         self.mw = HttpCompressionMiddleware()
@@ -54,8 +53,7 @@ class HttpCompressionTest(TestCase):
         request = Request('http://scrapytest.org')
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
-        self.assertEqual(request.headers.get('Accept-Encoding'),
-                         b', '.join(ACCEPTED_ENCODINGS))
+        self.assertEqual(request.headers.get('Accept-Encoding'), b', '.join(ACCEPTED_ENCODINGS))
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')
@@ -123,8 +121,10 @@ class HttpCompressionTest(TestCase):
             'Content-Encoding': 'gzip',
         }
         f = BytesIO()
-        plainbody = (b'<html><head><title>Some page</title>'
-                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
+        plainbody = (
+            b'<html><head><title>Some page</title>'
+            b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">'
+        )
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()
@@ -142,8 +142,10 @@ class HttpCompressionTest(TestCase):
             'Content-Encoding': 'gzip',
         }
         f = BytesIO()
-        plainbody = (b'<html><head><title>Some page</title>'
-                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
+        plainbody = (
+            b'<html><head><title>Some page</title>'
+            b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">'
+        )
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()
@@ -159,8 +161,10 @@ class HttpCompressionTest(TestCase):
         headers = {
             'Content-Encoding': 'identity',
         }
-        plainbody = (b'<html><head><title>Some page</title>'
-                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
+        plainbody = (
+            b'<html><head><title>Some page</title>'
+            b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">'
+        )
         respcls = responsetypes.from_args(url="http://www.example.com/index", headers=headers, body=plainbody)
         response = respcls("http://www.example.com/index", headers=headers, body=plainbody)
         request = Request("http://www.example.com/index")

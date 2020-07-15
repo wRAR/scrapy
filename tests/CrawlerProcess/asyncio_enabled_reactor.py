@@ -1,6 +1,7 @@
 import asyncio
 
 from twisted.internet import asyncioreactor
+
 asyncioreactor.install(asyncio.get_event_loop())
 
 import scrapy
@@ -14,8 +15,6 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
-process = CrawlerProcess(settings={
-    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-})
+process = CrawlerProcess(settings={"TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",})
 process.crawl(NoRequestsSpider)
 process.start()

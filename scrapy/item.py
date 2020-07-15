@@ -19,14 +19,18 @@ class _BaseItem(object_ref):
     Temporary class used internally to avoid the deprecation
     warning raised by isinstance checks using BaseItem.
     """
+
     pass
 
 
 class _BaseItemMeta(ABCMeta):
     def __instancecheck__(cls, instance):
         if cls is BaseItem:
-            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
+            warn(
+                'scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return super().__instancecheck__(instance)
 
 
@@ -37,8 +41,11 @@ class BaseItem(_BaseItem, metaclass=_BaseItemMeta):
 
     def __new__(cls, *args, **kwargs):
         if issubclass(cls, BaseItem) and not issubclass(cls, (Item, DictItem)):
-            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
+            warn(
+                'scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return super(BaseItem, cls).__new__(cls, *args, **kwargs)
 
 
@@ -79,8 +86,11 @@ class DictItem(MutableMapping, BaseItem):
 
     def __new__(cls, *args, **kwargs):
         if issubclass(cls, DictItem) and not issubclass(cls, Item):
-            warn('scrapy.item.DictItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
+            warn(
+                'scrapy.item.DictItem is deprecated, please use scrapy.item.Item instead',
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return super(DictItem, cls).__new__(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):

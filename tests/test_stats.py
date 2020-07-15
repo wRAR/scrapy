@@ -9,7 +9,6 @@ from scrapy.utils.test import get_crawler
 
 
 class CoreStatsExtensionTest(unittest.TestCase):
-
     def setUp(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('foo')
@@ -36,7 +35,7 @@ class CoreStatsExtensionTest(unittest.TestCase):
                 'item_dropped_reasons_count/ZeroDivisionError': 1,
                 'finish_reason': 'finished',
                 'elapsed_time_seconds': 0.0,
-            }
+            },
         )
 
     def test_core_stats_dummy_stats_collector(self):
@@ -51,7 +50,6 @@ class CoreStatsExtensionTest(unittest.TestCase):
 
 
 class StatsCollectorTest(unittest.TestCase):
-
     def setUp(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('foo')

@@ -255,9 +255,7 @@ class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
     custom_settings = {
         'RETRY_HTTP_CODES': [],  # no need to retry
     }
-    rules = (
-        Rule(LinkExtractor(), callback='callback', errback='errback', follow=True),
-    )
+    rules = (Rule(LinkExtractor(), callback='callback', errback='errback', follow=True),)
 
     def start_requests(self):
         test_body = b"""
@@ -284,7 +282,7 @@ class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
 
 class BytesReceivedCallbackSpider(MetaSpider):
 
-    full_response_length = 2**18
+    full_response_length = 2 ** 18
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
@@ -309,7 +307,6 @@ class BytesReceivedCallbackSpider(MetaSpider):
 
 
 class BytesReceivedErrbackSpider(BytesReceivedCallbackSpider):
-
     def bytes_received(self, data, request, spider):
         self.meta["bytes_received"] = data
         raise StopDownload(fail=True)

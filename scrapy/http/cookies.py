@@ -164,13 +164,11 @@ class WrappedRequest:
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return to_unicode(self.request.headers.get(name, default),
-                          errors='replace')
+        return to_unicode(self.request.headers.get(name, default), errors='replace')
 
     def header_items(self):
         return [
-            (to_unicode(k, errors='replace'),
-             [to_unicode(x, errors='replace') for x in v])
+            (to_unicode(k, errors='replace'), [to_unicode(x, errors='replace') for x in v])
             for k, v in self.request.headers.items()
         ]
 
@@ -179,7 +177,6 @@ class WrappedRequest:
 
 
 class WrappedResponse:
-
     def __init__(self, response):
         self.response = response
 
@@ -188,7 +185,7 @@ class WrappedResponse:
 
     # python3 cookiejars calls get_all
     def get_all(self, name, default=None):
-        return [to_unicode(v, errors='replace')
-                for v in self.response.headers.getlist(name)]
+        return [to_unicode(v, errors='replace') for v in self.response.headers.getlist(name)]
+
     # python2 cookiejars calls getheaders
     getheaders = get_all

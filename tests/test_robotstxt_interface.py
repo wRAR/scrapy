@@ -34,10 +34,9 @@ class BaseRobotParserTest:
         self.parser_cls = parser_cls
 
     def test_allowed(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: /disallowed \n"
-                                    "Allow: /allowed \n"
-                                    "Crawl-delay: 10".encode('utf-8'))
+        robotstxt_robotstxt_body = (
+            "User-agent: * \n" "Disallow: /disallowed \n" "Allow: /allowed \n" "Crawl-delay: 10".encode('utf-8')
+        )
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
         self.assertTrue(rp.allowed("https://www.site.local/allowed", "*"))
         self.assertFalse(rp.allowed("https://www.site.local/disallowed", "*"))
@@ -49,7 +48,9 @@ class BaseRobotParserTest:
                                 User-agent: second
                                 Allow: /*allowed
                                 Disallow: /
-                                """.encode('utf-8')
+                                """.encode(
+            'utf-8'
+        )
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
 
         self.assertTrue(rp.allowed("https://www.site.local/disallowed", "first"))
@@ -62,16 +63,12 @@ class BaseRobotParserTest:
         self.assertTrue(rp.allowed("https://www.site.local/is_allowed_too", "second"))
 
     def test_length_based_precedence(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: / \n"
-                                    "Allow: /page".encode('utf-8'))
+        robotstxt_robotstxt_body = "User-agent: * \n" "Disallow: / \n" "Allow: /page".encode('utf-8')
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
         self.assertTrue(rp.allowed("https://www.site.local/page", "*"))
 
     def test_order_based_precedence(self):
-        robotstxt_robotstxt_body = ("User-agent: * \n"
-                                    "Disallow: / \n"
-                                    "Allow: /page".encode('utf-8'))
+        robotstxt_robotstxt_body = "User-agent: * \n" "Disallow: / \n" "Allow: /page".encode('utf-8')
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
         self.assertFalse(rp.allowed("https://www.site.local/page", "*"))
 
@@ -102,7 +99,9 @@ class BaseRobotParserTest:
         Disallow: /wiki/Käyttäjä:
 
         User-Agent: UnicödeBöt
-        Disallow: /some/randome/page.html""".encode('utf-8')
+        Disallow: /some/randome/page.html""".encode(
+            'utf-8'
+        )
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_robotstxt_body)
         self.assertTrue(rp.allowed("https://site.local/", "*"))
         self.assertFalse(rp.allowed("https://site.local/admin/", "*"))
@@ -117,6 +116,7 @@ class BaseRobotParserTest:
 class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
     def setUp(self):
         from scrapy.robotstxt import PythonRobotParser
+
         super(PythonRobotParserTest, self)._setUp(PythonRobotParser)
 
     def test_length_based_precedence(self):
@@ -132,6 +132,7 @@ class ReppyRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def setUp(self):
         from scrapy.robotstxt import ReppyRobotParser
+
         super(ReppyRobotParserTest, self)._setUp(ReppyRobotParser)
 
     def test_order_based_precedence(self):
@@ -144,6 +145,7 @@ class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def setUp(self):
         from scrapy.robotstxt import RerpRobotParser
+
         super(RerpRobotParserTest, self)._setUp(RerpRobotParser)
 
     def test_length_based_precedence(self):
@@ -156,6 +158,7 @@ class ProtegoRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def setUp(self):
         from scrapy.robotstxt import ProtegoRobotParser
+
         super(ProtegoRobotParserTest, self)._setUp(ProtegoRobotParser)
 
     def test_order_based_precedence(self):

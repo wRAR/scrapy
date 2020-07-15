@@ -5,7 +5,6 @@ from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Heade
 
 
 class ResponseTypesTest(unittest.TestCase):
-
     def test_from_filename(self):
         mappings = [
             ('data.bin', Response),
@@ -28,7 +27,6 @@ class ResponseTypesTest(unittest.TestCase):
             (u'attachment;filename=data高.doc'.encode('gbk'), Response),
             (u'attachment;filename=دورهdata.html'.encode('cp720'), HtmlResponse),
             (u'attachment;filename=日本語版Wikipedia.xml'.encode('iso2022_jp'), XmlResponse),
-
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_disposition(source)
@@ -64,8 +62,13 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
             ({'Content-Type': ['text/html; charset=utf-8'], 'Content-Encoding': ['gzip']}, Response),
-            ({'Content-Type': ['application/octet-stream'],
-              'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
+            (
+                {
+                    'Content-Type': ['application/octet-stream'],
+                    'Content-Disposition': ['attachment; filename=data.txt'],
+                },
+                TextResponse,
+            ),
         ]
         for source, cls in mappings:
             source = Headers(source)
@@ -77,12 +80,20 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             # headers takes precedence over url
-            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
-              'url': 'http://www.example.com/item/'}, HtmlResponse),
-            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
-              'url': 'http://www.example.com/page/'}, Response),
-
-
+            (
+                {
+                    'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
+                    'url': 'http://www.example.com/item/',
+                },
+                HtmlResponse,
+            ),
+            (
+                {
+                    'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
+                    'url': 'http://www.example.com/page/',
+                },
+                Response,
+            ),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)

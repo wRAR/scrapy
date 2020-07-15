@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class AutoThrottle:
-
     def __init__(self, crawler):
         self.crawler = crawler
         if not crawler.settings.getbool('AUTOTHROTTLE_ENABLED'):
@@ -54,11 +53,14 @@ class AutoThrottle:
                 "delay:%(delay)5d ms (%(delaydiff)+d) | "
                 "latency:%(latency)5d ms | size:%(size)6d bytes",
                 {
-                    'slot': key, 'concurrency': conc,
-                    'delay': slot.delay * 1000, 'delaydiff': diff * 1000,
-                    'latency': latency * 1000, 'size': size
+                    'slot': key,
+                    'concurrency': conc,
+                    'delay': slot.delay * 1000,
+                    'delaydiff': diff * 1000,
+                    'latency': latency * 1000,
+                    'size': size,
                 },
-                extra={'spider': spider}
+                extra={'spider': spider},
             )
 
     def _get_slot(self, request, spider):

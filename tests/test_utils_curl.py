@@ -33,12 +33,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         expected_result = {
             "method": "GET",
             "url": "https://api.test.com/",
-            "headers": [
-                (
-                    "Authorization",
-                    basic_auth_header("some_username", "some_password")
-                )
-            ],
+            "headers": [("Authorization", basic_auth_header("some_username", "some_password"))],
         }
         self._test_command(curl_command, expected_result)
 
@@ -70,8 +65,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
                 ),
                 (
                     "Accept",
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
-                    "ge/webp,image/apng,*/*;q=0.8",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima" "ge/webp,image/apng,*/*;q=0.8",
                 ),
                 ("Referer", "http://httpbin.org/"),
                 ("Connection", "keep-alive"),
@@ -81,7 +75,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
                 '_gauges_unique_hour': '1',
                 '_gauges_unique_day': '1',
                 '_gauges_unique': '1',
-                '_gauges_unique_month': '1'
+                '_gauges_unique_month': '1',
             },
         }
         self._test_command(curl_command, expected_result)
@@ -107,14 +101,14 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             "method": "POST",
             "url": "http://httpbin.org/post",
             "body": "custname=John+Smith&custtel=500&custemail=jsmith%40exampl"
-                    "e.org&size=small&topping=cheese&topping=onion&delivery=12"
-                    "%3A15&comments=",
+            "e.org&size=small&topping=cheese&topping=onion&delivery=12"
+            "%3A15&comments=",
             "cookies": {
                 '_gauges_unique_year': '1',
                 '_gauges_unique_hour': '1',
                 '_gauges_unique_day': '1',
                 '_gauges_unique': '1',
-                '_gauges_unique_month': '1'
+                '_gauges_unique_month': '1',
             },
             "headers": [
                 ("Origin", "http://httpbin.org"),
@@ -130,8 +124,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
                 ("Content-Type", "application/x-www-form-urlencoded"),
                 (
                     "Accept",
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
-                    "ge/webp,image/apng,*/*;q=0.8",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima" "ge/webp,image/apng,*/*;q=0.8",
                 ),
                 ("Cache-Control", "max-age=0"),
                 ("Referer", "http://httpbin.org/forms/post"),
@@ -152,17 +145,14 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             "body": (
                 "excerptLength=200&enableDidYouMean=true&sortCriteria=ffirstz3"
                 "2xnamez32x201740686%20ascending&queryFunctions=%5B%5D&ranking"
-                "Functions=%5B%5D")
+                "Functions=%5B%5D"
+            ),
         }
         self._test_command(curl_command, expected_result)
 
     def test_explicit_get_with_data(self):
         curl_command = 'curl httpbin.org/anything -X GET --data asdf'
-        expected_result = {
-            "method": "GET",
-            "url": "http://httpbin.org/anything",
-            "body": "asdf"
-        }
+        expected_result = {"method": "GET", "url": "http://httpbin.org/anything", "body": "asdf"}
         self._test_command(curl_command, expected_result)
 
     def test_patch(self):
@@ -182,16 +172,14 @@ class CurlToRequestKwargsTest(unittest.TestCase):
                 ("Authorization", basic_auth_header("username", "password")),
             ],
             "body": '{"hostname": "agent02.example.com",  "agent_config_state"'
-                    ': "Enabled", "resources": ["Java","Linux"], "environments'
-                    '": ["Dev"]}',
+            ': "Enabled", "resources": ["Java","Linux"], "environments'
+            '": ["Dev"]}',
         }
         self._test_command(curl_command, expected_result)
 
     def test_delete(self):
         curl_command = 'curl -X "DELETE" https://www.url.com/page'
-        expected_result = {
-            "method": "DELETE", "url": "https://www.url.com/page"
-        }
+        expected_result = {"method": "DELETE", "url": "https://www.url.com/page"}
         self._test_command(curl_command, expected_result)
 
     def test_get_silent(self):
@@ -218,14 +206,8 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         self.assertRaisesRegex(
             ValueError,
             "Unrecognized options:.*--bar.*--baz",
-            lambda: curl_to_request_kwargs(
-                "curl --bar --baz http://www.example.com",
-                ignore_unknown_options=False
-            ),
+            lambda: curl_to_request_kwargs("curl --bar --baz http://www.example.com", ignore_unknown_options=False),
         )
 
     def test_must_start_with_curl_error(self):
-        self.assertRaises(
-            ValueError,
-            lambda: curl_to_request_kwargs("carl -X POST http://example.org")
-        )
+        self.assertRaises(ValueError, lambda: curl_to_request_kwargs("carl -X POST http://example.org"))

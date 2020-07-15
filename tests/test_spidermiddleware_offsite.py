@@ -9,7 +9,6 @@ from scrapy.utils.test import get_crawler
 
 
 class TestOffsiteMiddleware(TestCase):
-
     def setUp(self):
         crawler = get_crawler(Spider)
         self.spider = crawler._create_spider(**self._get_spiderargs())
@@ -47,7 +46,6 @@ class TestOffsiteMiddleware(TestCase):
 
 
 class TestOffsiteMiddleware2(TestOffsiteMiddleware):
-
     def _get_spiderargs(self):
         return dict(name='foo', allowed_domains=None)
 
@@ -59,13 +57,11 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
 
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
-
     def _get_spiderargs(self):
         return dict(name='foo')
 
 
 class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
-
     def _get_spiderargs(self):
         bad_hostname = urlparse('http:////scrapytest.org').hostname
         return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
@@ -78,7 +74,6 @@ class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
 
 class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
-
     def test_get_host_regex(self):
         self.spider.allowed_domains = ['http://scrapytest.org', 'scrapy.org', 'scrapy.test.org']
         with warnings.catch_warnings(record=True) as w:
@@ -88,7 +83,6 @@ class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
 
 
 class TestOffsiteMiddleware6(TestOffsiteMiddleware4):
-
     def test_get_host_regex(self):
         self.spider.allowed_domains = ['scrapytest.org:8000', 'scrapy.org', 'scrapy.test.org']
         with warnings.catch_warnings(record=True) as w:
