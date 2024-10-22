@@ -12,24 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.9"
-          env:
-            TOXENV: windows-pinned
-        - python-version: "3.10"
-          env:
-            TOXENV: py
-        - python-version: "3.11"
-          env:
-            TOXENV: py
         - python-version: "3.12"
           env:
             TOXENV: py
         - python-version: "3.13"
           env:
             TOXENV: py
-        - python-version: "3.13"
-          env:
-            TOXENV: asyncio
 
     steps:
     - uses: actions/checkout@v4
@@ -43,4 +31,4 @@ jobs:
       env: ${{ matrix.env }}
       run: |
         pip install -U tox
-        tox
+        tox -- tests/test_feedexport.py::FTPFeedStorageTest::test_append

@@ -41,5 +41,6 @@ def ftp_store_file(
         dirname, filename = posixpath.split(path)
         ftp_makedirs_cwd(ftp, dirname)
         command = "STOR" if overwrite else "APPE"
+        print(f"XXXX {dirname} {filename}")
         ftp.storbinary(f"{command} {filename}", file)
         file.close()

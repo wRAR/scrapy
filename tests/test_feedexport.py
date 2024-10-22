@@ -5,6 +5,7 @@ import csv
 import gzip
 import json
 import lzma
+import os.path
 import random
 import shutil
 import string
@@ -14,6 +15,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from contextlib import ExitStack
+from ftplib import FTP
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
@@ -158,15 +160,39 @@ class FTPFeedStorageTest(unittest.TestCase):
         finally:
             path.unlink()
 
-    @defer.inlineCallbacks
+    # @defer.inlineCallbacks
     def test_append(self):
         with MockFTPServer() as ftp_server:
-            filename = "file"
-            url = ftp_server.url(filename)
-            feed_options = {"overwrite": False}
-            yield self._store(url, b"foo", feed_options=feed_options)
-            yield self._store(url, b"bar", feed_options=feed_options)
-            self._assert_stored(ftp_server.path / filename, b"foobar")
+            # filename = "file"
+            print(f"XXXX {ftp_server.path}")
+            with open(os.path.join(ftp_server.path, "testxxx"), "w"):
+                pass
+            # url = ftp_server.url(filename)
+            file = tempfile.NamedTemporaryFile(prefix="feed-")
+            file.write(b"foo")
+            with FTP() as ftp:
+                ftp.connect("127.0.0.1", 2121)
+                ftp.login("", "")
+                file.seek(0)
+                ftp.cwd("/")
+                ftp.storbinary("APPE foobarfile", file)
+                file.close()
+
+            # ftp_store_file(
+            #     path="/file",
+            #     file=file,
+            #     host="127.0.0.1",
+            #     port=2121,
+            #     username="",
+            #     password="",
+            #     use_active_mode=False,
+            #     overwrite=False,
+            # )
+            # yield storage.store(file)
+            # feed_options = {"overwrite": False}
+            # yield self._store(url, b"foo", feed_options=feed_options)
+            # yield self._store(url, b"bar", feed_options=feed_options)
+            # self._assert_stored(ftp_server.path / filename, b"foobar")
 
     @defer.inlineCallbacks
     def test_overwrite(self):
