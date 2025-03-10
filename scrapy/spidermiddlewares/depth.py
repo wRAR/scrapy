@@ -29,15 +29,17 @@ logger = logging.getLogger(__name__)
 class DepthMiddleware(BaseSpiderMiddleware):
     def __init__(
         self,
+        *,
+        crawler: Crawler,
         maxdepth: int,
-        stats: StatsCollector,
         verbose_stats: bool = False,
         prio: int = 1,
     ):
-        self.maxdepth = maxdepth
-        self.stats = stats
-        self.verbose_stats = verbose_stats
-        self.prio = prio
+        self.crawler: Crawler = crawler
+        self.maxdepth: int = maxdepth
+        self.stats: StatsCollector = crawler.stats
+        self.verbose_stats: bool = verbose_stats
+        self.prio: int = prio
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -45,8 +47,12 @@ class DepthMiddleware(BaseSpiderMiddleware):
         maxdepth = settings.getint("DEPTH_LIMIT")
         verbose = settings.getbool("DEPTH_STATS_VERBOSE")
         prio = settings.getint("DEPTH_PRIORITY")
-        assert crawler.stats
-        return cls(maxdepth, crawler.stats, verbose, prio)
+        return cls(
+            crawler=crawler,
+            maxdepth=maxdepth,
+            verbose_stats=verbose,
+            prio=prio,
+        )
 
     def process_spider_output(
         self, response: Response, result: Iterable[Any], spider: Spider
@@ -69,7 +75,7 @@ class DepthMiddleware(BaseSpiderMiddleware):
                 self.stats.inc_value("request_depth_count/0", spider=spider)
 
     def get_processed_request(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response
     ) -> Request | None:
         depth = response.meta["depth"] + 1
         request.meta["depth"] = depth
@@ -79,10 +85,12 @@ class DepthMiddleware(BaseSpiderMiddleware):
             logger.debug(
                 "Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
                 {"maxdepth": self.maxdepth, "requrl": request.url},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
             return None
         if self.verbose_stats:
-            self.stats.inc_value(f"request_depth_count/{depth}", spider=spider)
-        self.stats.max_value("request_depth_max", depth, spider=spider)
+            self.stats.inc_value(
+                f"request_depth_count/{depth}", spider=self.crawler.spider
+            )
+        self.stats.max_value("request_depth_max", depth, spider=self.crawler.spider)
         return request

@@ -23,9 +23,9 @@ class BaseSpiderMiddleware:
     ) -> Iterable[Any]:
         for o in result:
             if isinstance(o, Request):
-                o = self.get_processed_request(o, response, spider)
+                o = self.get_processed_request(o, response)
             else:
-                o = self.get_processed_item(o, response, spider)
+                o = self.get_processed_item(o, response)
             if o is not None:
                 yield o
 
@@ -34,18 +34,18 @@ class BaseSpiderMiddleware:
     ) -> AsyncIterable[Any]:
         async for o in result:
             if isinstance(o, Request):
-                o = self.get_processed_request(o, response, spider)
+                o = self.get_processed_request(o, response)
             else:
-                o = self.get_processed_item(o, response, spider)
+                o = self.get_processed_item(o, response)
             if o is not None:
                 yield o
 
     def get_processed_request(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response
     ) -> Request | None:
         """TODO: describe the protocol"""
         return request
 
-    def get_processed_item(self, item: Any, response: Response, spider: Spider) -> Any:
+    def get_processed_item(self, item: Any, response: Response) -> Any:
         """TODO: describe the protocol"""
         return item
