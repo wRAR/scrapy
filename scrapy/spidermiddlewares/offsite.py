@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 class OffsiteMiddleware(BaseSpiderMiddleware):
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
+        assert crawler.stats
         self.stats: StatsCollector = crawler.stats
 
     @classmethod
@@ -48,6 +49,7 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
     def get_processed_request(
         self, request: Request, response: Response
     ) -> Request | None:
+        assert self.crawler.spider
         if (
             request.dont_filter
             or request.meta.get("allow_offsite")

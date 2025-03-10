@@ -35,6 +35,7 @@ class DepthMiddleware(BaseSpiderMiddleware):
         verbose_stats: bool = False,
         prio: int = 1,
     ):
+        assert crawler.stats
         self.crawler: Crawler = crawler
         self.maxdepth: int = maxdepth
         self.stats: StatsCollector = crawler.stats
