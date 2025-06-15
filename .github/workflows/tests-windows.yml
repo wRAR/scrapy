@@ -58,6 +58,15 @@ jobs:
       run: |
         pip install -U tox
         tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
+        tox -- tests/test_engine_loop.py::TestMain
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v5
