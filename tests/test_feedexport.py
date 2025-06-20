@@ -149,7 +149,7 @@ class TestFileFeedStorage:
         file = storage.open(spider)
         file.write(b"content")
         storage.store(file)
-        assert path.exists()
+        assert path.exists(), [path, storage.path, Path(storage.path), file.name]
         try:
             assert path.read_bytes() == expected_content
         finally:
