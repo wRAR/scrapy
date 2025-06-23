@@ -509,7 +509,7 @@ class TestEngine(TestEngineBase):
         finally:
             timer.cancel()
 
-        assert b"Traceback" not in stderr, stderr
+        assert b"Traceback" not in stderr, stderr.decode()
 
 
 def test_request_scheduled_signal(caplog):

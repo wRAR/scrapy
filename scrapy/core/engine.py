@@ -138,7 +138,9 @@ class ExecutionEngine:
         self.running = True
         self._closewait = Deferred()
         if _start_request_processing:
+            logger.info("XXXX start 1")
             self._start_request_processing_dfd = self._start_request_processing()
+            logger.info("XXXX start 2")
         await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:
@@ -157,7 +159,9 @@ class ExecutionEngine:
 
         self.running = False
         if self._start_request_processing_dfd is not None:
+            logger.info("XXXX stop 1")
             self._start_request_processing_dfd.cancel()
+            logger.info("XXXX stop 2")
             self._start_request_processing_dfd = None
         dfd = (
             self.close_spider(self.spider, reason="shutdown")
@@ -220,11 +224,14 @@ class ExecutionEngine:
         # Starts the processing of scheduled requests, as well as a periodic
         # call to that processing method for scenarios where the scheduler
         # reports having pending requests but returns none.
+        logger.info("XXXX _start_request_processing 1")
         try:
             assert self._slot is not None  # typing
+            logger.info("XXXX _start_request_processing 2")
             self._slot.nextcall.schedule()
             self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
+            logger.info("XXXX _start_request_processing 3")
             while self._start and self.spider:
                 await self._process_start_next()
                 if not self.needs_backout():
@@ -234,9 +241,11 @@ class ExecutionEngine:
                     await self._slot.nextcall.wait()
         except (asyncio.exceptions.CancelledError, CancelledError):
             # self.stop() has cancelled us, nothing to do
+            logger.info("XXXX _start_request_processing cancel")
             return
         except Exception:
             # an error happened, log it and stop the engine
+            logger.info("XXXX _start_request_processing exc")
             self._start_request_processing_dfd = None
             logger.error(
                 "Error while processing requests from start()",

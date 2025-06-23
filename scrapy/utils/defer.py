@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import warnings
 from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
@@ -34,6 +35,9 @@ if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
 
     _P = ParamSpec("_P")
+
+
+logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
@@ -380,6 +384,7 @@ def deferred_from_coro(o: _T) -> _T: ...
 def deferred_from_coro(o: _T) -> Deferred | _T:
     """Converts a coroutine or other awaitable object into a Deferred,
     or returns the object as is if it isn't a coroutine."""
+    logger.info(f"XXXX deferred_from_coro 1 {o}")
     if isinstance(o, Deferred):
         return o
     if asyncio.isfuture(o) or inspect.isawaitable(o):
@@ -389,7 +394,10 @@ def deferred_from_coro(o: _T) -> Deferred | _T:
             return ensureDeferred(cast(Coroutine[Deferred, Any, Any], o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
         event_loop = _get_asyncio_event_loop()
-        return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
+        logger.info(f"XXXX deferred_from_coro 2 {o}")
+        d = Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
+        logger.info(f"XXXX deferred_from_coro 3 {o}")
+        return d
     return o
 
 
@@ -404,7 +412,10 @@ def deferred_f_from_coro_f(
 
     @wraps(coro_f)
     def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Any:
-        return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
+        logger.info(f"XXXX deferred_f_from_coro_f 1 {coro_f}")
+        d = deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
+        logger.info(f"XXXX deferred_f_from_coro_f 2 {coro_f}")
+        return d
 
     return f
 
