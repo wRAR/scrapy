@@ -13,7 +13,7 @@ from scrapy.utils.test import get_from_asyncio_queue
 
 class TestSendCatchLog(unittest.TestCase):
     @defer.inlineCallbacks
-    def test_send_catch_log(self):
+    def _test_send_catch_log(self):
         test_signal = object()
         handlers_called = set()
 

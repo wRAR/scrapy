@@ -160,6 +160,12 @@ class ExecutionEngine:
         self.running = False
         if self._start_request_processing_dfd is not None:
             logger.info("XXXX stop 1")
+            logger.info(
+                f"XXXX stop dfd called {self._start_request_processing_dfd.called}"
+            )
+            logger.info(
+                f"XXXX stop dfd result {getattr(self._start_request_processing_dfd, 'result', 'unset')}"
+            )
             self._start_request_processing_dfd.cancel()
             logger.info("XXXX stop 2")
             self._start_request_processing_dfd = None
