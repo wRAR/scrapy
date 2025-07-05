@@ -131,7 +131,7 @@ parse = """(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)"""
 serialize = ["{major}.{minor}"]
 
 [tool.coverage.run]
-#branch = true
+branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
