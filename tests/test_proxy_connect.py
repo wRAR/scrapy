@@ -1,19 +1,27 @@
+from __future__ import annotations
+
 import json
 import os
 import re
 import sys
 from pathlib import Path
 from subprocess import PIPE, Popen
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 from testfixtures import LogCapture
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
-from tests.spiders import SimpleSpider, SingleRequestSpider
+from tests.spiders import MetaSpider, SimpleSpider, SingleRequestSpider
 from tests.utils.decorators import inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from tests.mockserver.http import MockServer
 
 
 class MitmProxy:
@@ -63,15 +71,6 @@ def _wrong_credentials(proxy_url):
 
 @pytest.mark.requires_mitmproxy
 class TestProxyConnect:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     def setup_method(self):
         self._oldenv = os.environ.copy()
         self._proxy = MitmProxy()
@@ -84,28 +83,35 @@ class TestProxyConnect:
         os.environ = self._oldenv
 
     @inline_callbacks_test
-    def test_https_connect_tunnel(self):
+    def test_https_connect_tunnel(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
+            yield crawler.crawl(mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, log)
 
     @inline_callbacks_test
-    def test_https_tunnel_auth_error(self):
+    def test_https_tunnel_auth_error(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         os.environ["https_proxy"] = _wrong_credentials(os.environ["https_proxy"])
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
+            yield crawler.crawl(mockserver.url("/status?n=200", is_secure=True))
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
         self._assert_got_tunnel_error(log)
 
-    @inline_callbacks_test
-    def test_https_tunnel_without_leak_proxy_authorization_header(self):
-        request = Request(self.mockserver.url("/echo", is_secure=True))
+    @inlineCallbacks
+    def test_https_tunnel_without_leak_proxy_authorization_header(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
+        request = Request(mockserver.url("/echo", is_secure=True))
         crawler = get_crawler(SingleRequestSpider)
         with LogCapture() as log:
             yield crawler.crawl(seed=request)
+        assert isinstance(crawler.spider, MetaSpider)
         self._assert_got_response_code(200, log)
         echo = json.loads(crawler.spider.meta["responses"][0].text)
         assert "Proxy-Authorization" not in echo["headers"]

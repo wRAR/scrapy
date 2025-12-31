@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from testfixtures import LogCapture
@@ -10,9 +13,15 @@ from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 from tests.utils.decorators import inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from twisted.internet.defer import Deferred
+
+    from tests.mockserver.http import MockServer
 
 
 class CustomItem(Item):
@@ -254,15 +263,6 @@ class DropSomeItemsPipeline:
 
 
 class TestShowOrSkipMessages:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     def setup_method(self):
         self.base_settings = {
             "LOG_LEVEL": "DEBUG",
@@ -272,21 +272,25 @@ class TestShowOrSkipMessages:
         }
 
     @inline_callbacks_test
-    def test_show_messages(self):
+    def test_show_messages(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(ItemSpider, self.base_settings)
         with LogCapture() as lc:
-            yield crawler.crawl(mockserver=self.mockserver)
+            yield crawler.crawl(mockserver=mockserver)
         assert "Scraped from <200 http://127.0.0.1:" in str(lc)
         assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
         assert "Dropped: Ignoring item" in str(lc)
 
     @inline_callbacks_test
-    def test_skip_messages(self):
+    def test_skip_messages(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         settings = self.base_settings.copy()
         settings["LOG_FORMATTER"] = SkipMessagesLogFormatter
         crawler = get_crawler(ItemSpider, settings)
         with LogCapture() as lc:
-            yield crawler.crawl(mockserver=self.mockserver)
+            yield crawler.crawl(mockserver=mockserver)
         assert "Scraped from <200 http://127.0.0.1:" not in str(lc)
         assert "Crawled (200) <GET http://127.0.0.1:" not in str(lc)
         assert "Dropped: Ignoring item" not in str(lc)

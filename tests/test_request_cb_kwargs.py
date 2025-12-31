@@ -1,10 +1,20 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from testfixtures import LogCapture
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
 from tests.utils.decorators import inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from twisted.internet.defer import Deferred
+
+    from tests.mockserver.http import MockServer
 
 
 class InjectArgumentsDownloaderMiddleware:
@@ -149,21 +159,16 @@ class KeywordArgumentsSpider(MockServerSpider):
 
 
 class TestCallbackKeywordArguments:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     @inline_callbacks_test
-    def test_callback_kwargs(self):
+    def test_callback_kwargs(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:
-            yield crawler.crawl(mockserver=self.mockserver)
+            yield crawler.crawl(mockserver=mockserver)
+        assert isinstance(crawler.spider, KeywordArgumentsSpider)
         assert all(crawler.spider.checks)
+        assert crawler.stats
         assert len(crawler.spider.checks) == crawler.stats.get_value("boolean_checks")
         # check exceptions for argument mismatch
         exceptions = {}

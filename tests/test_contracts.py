@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from unittest import TextTestResult
 
 import pytest
@@ -17,8 +20,14 @@ from scrapy.item import Field, Item
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.utils.decorators import inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from twisted.internet.defer import Deferred
+
+    from tests.mockserver.http import MockServer
 
 
 class DemoItem(Item):
@@ -502,7 +511,9 @@ class TestContractsManager:
         assert self.results.errors
 
     @inline_callbacks_test
-    def test_same_url(self):
+    def test_same_url(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         class TestSameUrlSpider(Spider):
             name = "test_same_url"
 
@@ -522,15 +533,15 @@ class TestContractsManager:
                 self.visited += 1
                 return DemoItem()
 
-        with MockServer() as mockserver:
-            contract_doc = f"@url {mockserver.url('/status?n=200')}"
+        contract_doc = f"@url {mockserver.url('/status?n=200')}"
 
-            TestSameUrlSpider.parse_first.__doc__ = contract_doc
-            TestSameUrlSpider.parse_second.__doc__ = contract_doc
+        TestSameUrlSpider.parse_first.__doc__ = contract_doc
+        TestSameUrlSpider.parse_second.__doc__ = contract_doc
 
-            crawler = get_crawler(TestSameUrlSpider)
-            yield crawler.crawl()
+        crawler = get_crawler(TestSameUrlSpider)
+        yield crawler.crawl()
 
+        assert isinstance(crawler.spider, TestSameUrlSpider)
         assert crawler.spider.visited == 2
 
     def test_form_contract(self):

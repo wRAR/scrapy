@@ -1,9 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import pytest
 
 from scrapy import Request, Spider, signals
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from twisted.internet.defer import Deferred
+
+    from tests.mockserver.http import MockServer
 
 
 class ItemSpider(Spider):
@@ -34,15 +44,6 @@ class TestMain:
 
 
 class TestMockServer:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     def setup_method(self):
         self.items = []
 
@@ -52,10 +53,12 @@ class TestMockServer:
 
     @pytest.mark.only_asyncio
     @inline_callbacks_test
-    def test_simple_pipeline(self):
+    def test_simple_pipeline(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(ItemSpider)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
-        yield crawler.crawl(mockserver=self.mockserver)
+        yield crawler.crawl(mockserver=mockserver)
         assert len(self.items) == 10
         for index in range(10):
             assert {"index": index} in self.items

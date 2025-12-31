@@ -1,8 +1,18 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from scrapy.signals import request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.utils.decorators import inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from twisted.internet.defer import Deferred
+
+    from tests.mockserver.http import MockServer
 
 
 class SignalCatcherSpider(Spider):
@@ -23,35 +33,36 @@ class SignalCatcherSpider(Spider):
 
 
 class TestCatching:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     @inline_callbacks_test
-    def test_success(self):
+    def test_success(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(SignalCatcherSpider)
-        yield crawler.crawl(self.mockserver.url("/status?n=200"))
+        yield crawler.crawl(mockserver.url("/status?n=200"))
+        assert isinstance(crawler.spider, SignalCatcherSpider)
         assert crawler.spider.caught_times == 1
 
     @inline_callbacks_test
-    def test_timeout(self):
+    def test_timeout(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(SignalCatcherSpider, {"DOWNLOAD_TIMEOUT": 0.1})
-        yield crawler.crawl(self.mockserver.url("/delay?n=0.2"))
+        yield crawler.crawl(mockserver.url("/delay?n=0.2"))
+        assert isinstance(crawler.spider, SignalCatcherSpider)
         assert crawler.spider.caught_times == 1
 
     @inline_callbacks_test
-    def test_disconnect(self):
+    def test_disconnect(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(SignalCatcherSpider)
-        yield crawler.crawl(self.mockserver.url("/drop"))
+        yield crawler.crawl(mockserver.url("/drop"))
+        assert isinstance(crawler.spider, SignalCatcherSpider)
         assert crawler.spider.caught_times == 1
 
     @inline_callbacks_test
     def test_noconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl("http://thereisdefinetelynosuchdomain.com")
+        assert isinstance(crawler.spider, SignalCatcherSpider)
         assert crawler.spider.caught_times == 1

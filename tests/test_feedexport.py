@@ -53,13 +53,17 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
-from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Generator, Iterable
     from os import PathLike
+
+    from botocore.stub import Stubber
+    from twisted.internet.defer import Deferred
+
+    from tests.mockserver.http import MockServer
 
 
 def path_to_url(path):
@@ -664,8 +668,6 @@ class LogOnStoreFileStorage:
 
 
 class TestFeedExportBase(ABC):
-    mockserver: MockServer
-
     class MyItem(scrapy.Item):
         foo = scrapy.Field()
         egg = scrapy.Field()
@@ -680,15 +682,6 @@ class TestFeedExportBase(ABC):
         filename = "".join(chars)
         return Path(self.temp_dir, inter_dir, filename)
 
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     def setup_method(self):
         self.temp_dir = tempfile.mkdtemp()
 
@@ -696,7 +689,7 @@ class TestFeedExportBase(ABC):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     async def exported_data(
-        self, items: Iterable[Any], settings: dict[str, Any]
+        self, items: Iterable[Any], mockserver: MockServer, settings: dict[str, Any]
     ) -> dict[str, Any]:
         """
         Return exported data which a spider yielding ``items`` would return.
@@ -708,9 +701,11 @@ class TestFeedExportBase(ABC):
             def parse(self, response):
                 yield from items
 
-        return await self.run_and_export(TestSpider, settings)
+        return await self.run_and_export(mockserver, TestSpider, settings)
 
-    async def exported_no_data(self, settings: dict[str, Any]) -> dict[str, Any]:
+    async def exported_no_data(
+        self, mockserver: MockServer, settings: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Return exported data which a spider yielding no ``items`` would return.
         """
@@ -721,27 +716,29 @@ class TestFeedExportBase(ABC):
             def parse(self, response):
                 pass
 
-        return await self.run_and_export(TestSpider, settings)
+        return await self.run_and_export(mockserver, TestSpider, settings)
 
     async def assertExported(
         self,
         items: Iterable[Any],
         header: Iterable[str],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
-        await self.assertExportedCsv(items, header, rows, settings)
-        await self.assertExportedJsonLines(items, rows, settings)
-        await self.assertExportedXml(items, rows, settings)
-        await self.assertExportedPickle(items, rows, settings)
-        await self.assertExportedMarshal(items, rows, settings)
-        await self.assertExportedMultiple(items, rows, settings)
+        await self.assertExportedCsv(items, header, rows, mockserver, settings)
+        await self.assertExportedJsonLines(items, rows, mockserver, settings)
+        await self.assertExportedXml(items, rows, mockserver, settings)
+        await self.assertExportedPickle(items, rows, mockserver, settings)
+        await self.assertExportedMarshal(items, rows, mockserver, settings)
+        await self.assertExportedMultiple(items, rows, mockserver, settings)
 
     async def assertExportedCsv(  # noqa: B027
         self,
         items: Iterable[Any],
         header: Iterable[str],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         pass
@@ -749,7 +746,8 @@ class TestFeedExportBase(ABC):
     async def assertExportedJsonLines(  # noqa: B027
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         pass
@@ -757,7 +755,8 @@ class TestFeedExportBase(ABC):
     async def assertExportedXml(  # noqa: B027
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         pass
@@ -765,7 +764,8 @@ class TestFeedExportBase(ABC):
     async def assertExportedMultiple(  # noqa: B027
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         pass
@@ -773,7 +773,8 @@ class TestFeedExportBase(ABC):
     async def assertExportedPickle(  # noqa: B027
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         pass
@@ -781,14 +782,15 @@ class TestFeedExportBase(ABC):
     async def assertExportedMarshal(  # noqa: B027
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         pass
 
     @abstractmethod
     async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
+        self, mockserver: MockServer, spider_cls: type[Spider], settings: dict[str, Any]
     ) -> dict[str, Any]:
         pass
 
@@ -851,7 +853,7 @@ class ExceptionJsonItemExporter(JsonItemExporter):
 
 class TestFeedExport(TestFeedExportBase):
     async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
+        self, mockserver: MockServer, spider_cls: type[Spider], settings: dict[str, Any]
     ) -> dict[str, Any]:
         """Run spider with specified settings; return exported data."""
 
@@ -863,7 +865,7 @@ class TestFeedExport(TestFeedExportBase):
 
         content: dict[str, Any] = {}
         try:
-            spider_cls.start_urls = [self.mockserver.url("/")]
+            spider_cls.start_urls = [mockserver.url("/")]
             crawler = get_crawler(spider_cls, settings)
             await crawler.crawl_async()
 
@@ -885,7 +887,8 @@ class TestFeedExport(TestFeedExportBase):
         self,
         items: Iterable[Any],
         header: Iterable[str],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         settings = settings or {}
@@ -896,7 +899,7 @@ class TestFeedExport(TestFeedExportBase):
                 },
             }
         )
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         reader = csv.DictReader(to_unicode(data["csv"]).splitlines())
         assert reader.fieldnames == list(header)
         assert rows == list(reader)
@@ -904,7 +907,8 @@ class TestFeedExport(TestFeedExportBase):
     async def assertExportedJsonLines(
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         settings = settings or {}
@@ -915,7 +919,7 @@ class TestFeedExport(TestFeedExportBase):
                 },
             }
         )
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         parsed = [json.loads(to_unicode(line)) for line in data["jl"].splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         assert rows == parsed
@@ -923,7 +927,8 @@ class TestFeedExport(TestFeedExportBase):
     async def assertExportedXml(
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         settings = settings or {}
@@ -934,7 +939,7 @@ class TestFeedExport(TestFeedExportBase):
                 },
             }
         )
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         root = lxml.etree.fromstring(data["xml"])
         got_rows = [{e.tag: e.text for e in it} for it in root.findall("item")]
@@ -943,7 +948,8 @@ class TestFeedExport(TestFeedExportBase):
     async def assertExportedMultiple(
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         settings = settings or {}
@@ -955,7 +961,7 @@ class TestFeedExport(TestFeedExportBase):
                 },
             }
         )
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         # XML
         root = lxml.etree.fromstring(data["xml"])
@@ -968,7 +974,8 @@ class TestFeedExport(TestFeedExportBase):
     async def assertExportedPickle(
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         settings = settings or {}
@@ -979,7 +986,7 @@ class TestFeedExport(TestFeedExportBase):
                 },
             }
         )
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
 
         result = self._load_until_eof(data["pickle"], load_func=pickle.load)
@@ -988,7 +995,8 @@ class TestFeedExport(TestFeedExportBase):
     async def assertExportedMarshal(
         self,
         items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
         settings: dict[str, Any] | None = None,
     ) -> None:
         settings = settings or {}
@@ -999,14 +1007,16 @@ class TestFeedExport(TestFeedExportBase):
                 },
             }
         )
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
 
         result = self._load_until_eof(data["marshal"], load_func=marshal.load)
         assert result == expected
 
     @inline_callbacks_test
-    def test_stats_file_success(self):
+    def test_stats_file_success(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         settings = {
             "FEEDS": {
                 printf_escape(path_to_url(str(self._random_temp_filename()))): {
@@ -1015,12 +1025,15 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        yield crawler.crawl(mockserver=self.mockserver)
+        yield crawler.crawl(mockserver=mockserver)
+        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
 
     @inline_callbacks_test
-    def test_stats_file_failed(self):
+    def test_stats_file_failed(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         settings = {
             "FEEDS": {
                 printf_escape(path_to_url(str(self._random_temp_filename()))): {
@@ -1033,12 +1046,15 @@ class TestFeedExport(TestFeedExportBase):
             "scrapy.extensions.feedexport.FileFeedStorage.store",
             side_effect=KeyError("foo"),
         ):
-            yield crawler.crawl(mockserver=self.mockserver)
+            yield crawler.crawl(mockserver=mockserver)
+        assert crawler.stats
         assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/failed_count/FileFeedStorage") == 1
 
     @inline_callbacks_test
-    def test_stats_multiple_file(self):
+    def test_stats_multiple_file(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         settings = {
             "FEEDS": {
                 printf_escape(path_to_url(str(self._random_temp_filename()))): {
@@ -1051,7 +1067,8 @@ class TestFeedExport(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         with mock.patch.object(S3FeedStorage, "store"):
-            yield crawler.crawl(mockserver=self.mockserver)
+            yield crawler.crawl(mockserver=mockserver)
+        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert "feedexport/success_count/StdoutFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
@@ -1060,7 +1077,7 @@ class TestFeedExport(TestFeedExportBase):
         )
 
     @coroutine_test
-    async def test_export_items(self):
+    async def test_export_items(self, mockserver: MockServer) -> None:
         # feed exporters use field names from Item
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -1071,10 +1088,12 @@ class TestFeedExport(TestFeedExportBase):
             {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
         ]
         header = self.MyItem.fields.keys()
-        await self.assertExported(items, header, rows)
+        await self.assertExported(items, header, rows, mockserver)
 
     @coroutine_test
-    async def test_export_no_items_not_store_empty(self):
+    async def test_export_no_items_not_store_empty(
+        self, mockserver: MockServer
+    ) -> None:
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
                 "FEEDS": {
@@ -1082,11 +1101,11 @@ class TestFeedExport(TestFeedExportBase):
                 },
                 "FEED_STORE_EMPTY": False,
             }
-            data = await self.exported_no_data(settings)
+            data = await self.exported_no_data(mockserver, settings)
             assert data[fmt] is None
 
     @coroutine_test
-    async def test_start_finish_exporting_items(self):
+    async def test_start_finish_exporting_items(self, mockserver: MockServer) -> None:
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
@@ -1101,13 +1120,15 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await self.exported_data(items, mockserver, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
-    async def test_start_finish_exporting_no_items(self):
-        items = []
+    async def test_start_finish_exporting_no_items(
+        self, mockserver: MockServer
+    ) -> None:
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1119,12 +1140,14 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await self.exported_data(items, mockserver, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
-    async def test_start_finish_exporting_items_exception(self):
+    async def test_start_finish_exporting_items_exception(
+        self, mockserver: MockServer
+    ) -> None:
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
@@ -1140,13 +1163,15 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await self.exported_data(items, mockserver, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
-    async def test_start_finish_exporting_no_items_exception(self):
-        items = []
+    async def test_start_finish_exporting_no_items_exception(
+        self, mockserver: MockServer
+    ) -> None:
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1159,12 +1184,12 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await self.exported_data(items, mockserver, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
-    async def test_export_no_items_store_empty(self):
+    async def test_export_no_items_store_empty(self, mockserver: MockServer) -> None:
         formats = (
             ("json", b"[]"),
             ("jsonlines", b""),
@@ -1180,11 +1205,11 @@ class TestFeedExport(TestFeedExportBase):
                 "FEED_STORE_EMPTY": True,
                 "FEED_EXPORT_INDENT": None,
             }
-            data = await self.exported_no_data(settings)
+            data = await self.exported_no_data(mockserver, settings)
             assert expctd == data[fmt]
 
     @coroutine_test
-    async def test_export_no_items_multiple_feeds(self):
+    async def test_export_no_items_multiple_feeds(self, mockserver: MockServer) -> None:
         """Make sure that `storage.store` is called for every feed."""
         settings = {
             "FEEDS": {
@@ -1197,12 +1222,12 @@ class TestFeedExport(TestFeedExportBase):
         }
 
         with LogCapture() as log:
-            await self.exported_no_data(settings)
+            await self.exported_no_data(mockserver, settings)
 
         assert str(log).count("Storage.store is called") == 0
 
     @coroutine_test
-    async def test_export_multiple_item_classes(self):
+    async def test_export_multiple_item_classes(self, mockserver: MockServer) -> None:
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
             self.MyItem2({"hello": "world2", "foo": "bar2"}),
@@ -1220,53 +1245,57 @@ class TestFeedExport(TestFeedExportBase):
             {"egg": "spam4", "foo": "", "baz": ""},
         ]
         rows_jl = [dict(row) for row in items]
-        await self.assertExportedCsv(items, header, rows_csv)
-        await self.assertExportedJsonLines(items, rows_jl)
+        await self.assertExportedCsv(items, header, rows_csv, mockserver)
+        await self.assertExportedJsonLines(items, rows_jl, mockserver)
 
     @coroutine_test
-    async def test_export_items_empty_field_list(self):
+    async def test_export_items_empty_field_list(self, mockserver: MockServer) -> None:
         # FEED_EXPORT_FIELDS==[] means the same as default None
         items = [{"foo": "bar"}]
         header = ["foo"]
         rows = [{"foo": "bar"}]
-        settings = {"FEED_EXPORT_FIELDS": []}
-        await self.assertExportedCsv(items, header, rows)
-        await self.assertExportedJsonLines(items, rows, settings)
+        settings: dict[str, Any] = {"FEED_EXPORT_FIELDS": []}
+        await self.assertExportedCsv(items, header, rows, mockserver)
+        await self.assertExportedJsonLines(items, rows, mockserver, settings)
 
     @coroutine_test
-    async def test_export_items_field_list(self):
+    async def test_export_items_field_list(self, mockserver: MockServer) -> None:
         items = [{"foo": "bar"}]
         header = ["foo", "baz"]
         rows = [{"foo": "bar", "baz": ""}]
         settings = {"FEED_EXPORT_FIELDS": header}
-        await self.assertExported(items, header, rows, settings=settings)
+        await self.assertExported(items, header, rows, mockserver, settings=settings)
 
     @coroutine_test
-    async def test_export_items_comma_separated_field_list(self):
+    async def test_export_items_comma_separated_field_list(
+        self, mockserver: MockServer
+    ) -> None:
         items = [{"foo": "bar"}]
         header = ["foo", "baz"]
         rows = [{"foo": "bar", "baz": ""}]
         settings = {"FEED_EXPORT_FIELDS": ",".join(header)}
-        await self.assertExported(items, header, rows, settings=settings)
+        await self.assertExported(items, header, rows, mockserver, settings=settings)
 
     @coroutine_test
-    async def test_export_items_json_field_list(self):
+    async def test_export_items_json_field_list(self, mockserver: MockServer) -> None:
         items = [{"foo": "bar"}]
         header = ["foo", "baz"]
         rows = [{"foo": "bar", "baz": ""}]
         settings = {"FEED_EXPORT_FIELDS": json.dumps(header)}
-        await self.assertExported(items, header, rows, settings=settings)
+        await self.assertExported(items, header, rows, mockserver, settings=settings)
 
     @coroutine_test
-    async def test_export_items_field_names(self):
+    async def test_export_items_field_names(self, mockserver: MockServer) -> None:
         items = [{"foo": "bar"}]
         header = {"foo": "Foo"}
         rows = [{"Foo": "bar"}]
         settings = {"FEED_EXPORT_FIELDS": header}
-        await self.assertExported(items, list(header.values()), rows, settings=settings)
+        await self.assertExported(
+            items, list(header.values()), rows, mockserver, settings=settings
+        )
 
     @coroutine_test
-    async def test_export_items_dict_field_names(self):
+    async def test_export_items_dict_field_names(self, mockserver: MockServer) -> None:
         items = [{"foo": "bar"}]
         header = {
             "baz": "Baz",
@@ -1274,18 +1303,22 @@ class TestFeedExport(TestFeedExportBase):
         }
         rows = [{"Baz": "", "Foo": "bar"}]
         settings = {"FEED_EXPORT_FIELDS": header}
-        await self.assertExported(items, ["Baz", "Foo"], rows, settings=settings)
+        await self.assertExported(
+            items, ["Baz", "Foo"], rows, mockserver, settings=settings
+        )
 
     @coroutine_test
-    async def test_export_items_json_field_names(self):
+    async def test_export_items_json_field_names(self, mockserver: MockServer) -> None:
         items = [{"foo": "bar"}]
         header = {"foo": "Foo"}
         rows = [{"Foo": "bar"}]
         settings = {"FEED_EXPORT_FIELDS": json.dumps(header)}
-        await self.assertExported(items, list(header.values()), rows, settings=settings)
+        await self.assertExported(
+            items, list(header.values()), rows, mockserver, settings=settings
+        )
 
     @coroutine_test
-    async def test_export_based_on_item_classes(self):
+    async def test_export_based_on_item_classes(self, mockserver: MockServer) -> None:
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
             self.MyItem2({"hello": "world2", "foo": "bar2"}),
@@ -1326,12 +1359,12 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_based_on_custom_filters(self):
+    async def test_export_based_on_custom_filters(self, mockserver: MockServer) -> None:
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
             self.MyItem2({"hello": "world2", "foo": "bar2"}),
@@ -1385,12 +1418,12 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_dicts(self):
+    async def test_export_dicts(self, mockserver: MockServer) -> None:
         # When dicts are used, only keys from the first row are used as
         # a header for CSV, and all fields are used for JSON Lines.
         items = [
@@ -1399,11 +1432,11 @@ class TestFeedExport(TestFeedExportBase):
         ]
         rows_csv = [{"egg": "spam", "foo": "bar"}, {"egg": "spam", "foo": "bar"}]
         rows_jl = items
-        await self.assertExportedCsv(items, ["foo", "egg"], rows_csv)
-        await self.assertExportedJsonLines(items, rows_jl)
+        await self.assertExportedCsv(items, ["foo", "egg"], rows_csv, mockserver)
+        await self.assertExportedJsonLines(items, rows_jl, mockserver)
 
     @coroutine_test
-    async def test_export_tuple(self):
+    async def test_export_tuple(self, mockserver: MockServer) -> None:
         items = [
             {"foo": "bar1", "egg": "spam1"},
             {"foo": "bar2", "egg": "spam2", "baz": "quux"},
@@ -1411,10 +1444,12 @@ class TestFeedExport(TestFeedExportBase):
 
         settings = {"FEED_EXPORT_FIELDS": ("foo", "baz")}
         rows = [{"foo": "bar1", "baz": ""}, {"foo": "bar2", "baz": "quux"}]
-        await self.assertExported(items, ["foo", "baz"], rows, settings=settings)
+        await self.assertExported(
+            items, ["foo", "baz"], rows, mockserver, settings=settings
+        )
 
     @coroutine_test
-    async def test_export_feed_export_fields(self):
+    async def test_export_feed_export_fields(self, mockserver: MockServer) -> None:
         # FEED_EXPORT_FIELDS option allows to order export fields
         # and to select a subset of fields to export, both for Items and dicts.
 
@@ -1431,16 +1466,18 @@ class TestFeedExport(TestFeedExportBase):
                 {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
             ]
             await self.assertExported(
-                items, ["foo", "baz", "egg"], rows, settings=settings
+                items, ["foo", "baz", "egg"], rows, mockserver, settings=settings
             )
 
             # export a subset of columns
             settings = {"FEED_EXPORT_FIELDS": "egg,baz"}
             rows = [{"egg": "spam1", "baz": ""}, {"egg": "spam2", "baz": "quux2"}]
-            await self.assertExported(items, ["egg", "baz"], rows, settings=settings)
+            await self.assertExported(
+                items, ["egg", "baz"], rows, mockserver, settings=settings
+            )
 
     @coroutine_test
-    async def test_export_encoding(self):
+    async def test_export_encoding(self, mockserver: MockServer) -> None:
         items = [{"foo": "Test\xd6"}]
 
         formats = {
@@ -1454,13 +1491,13 @@ class TestFeedExport(TestFeedExportBase):
         }
 
         for fmt, expected in formats.items():
-            settings = {
+            settings: dict[str, Any] = {
                 "FEEDS": {
                     self._random_temp_filename(): {"format": fmt},
                 },
                 "FEED_EXPORT_INDENT": None,
             }
-            data = await self.exported_data(items, settings)
+            data = await self.exported_data(items, mockserver, settings)
             assert data[fmt] == expected
 
         formats = {
@@ -1481,11 +1518,11 @@ class TestFeedExport(TestFeedExportBase):
                 "FEED_EXPORT_INDENT": None,
                 "FEED_EXPORT_ENCODING": "latin-1",
             }
-            data = await self.exported_data(items, settings)
+            data = await self.exported_data(items, mockserver, settings)
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_multiple_configs(self):
+    async def test_export_multiple_configs(self, mockserver: MockServer) -> None:
         items = [{"foo": "FOO", "bar": "BAR"}]
 
         formats = {
@@ -1520,18 +1557,18 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_indentation(self):
+    async def test_export_indentation(self, mockserver: MockServer) -> None:
         items = [
             {"foo": ["bar"]},
             {"key": "value"},
         ]
 
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # JSON
             {
                 "format": "json",
@@ -1677,11 +1714,13 @@ class TestFeedExport(TestFeedExportBase):
                     },
                 },
             }
-            data = await self.exported_data(items, settings)
+            data = await self.exported_data(items, mockserver, settings)
             assert data[row["format"]] == row["expected"]
 
     @coroutine_test
-    async def test_init_exporters_storages_with_crawler(self):
+    async def test_init_exporters_storages_with_crawler(
+        self, mockserver: MockServer
+    ) -> None:
         settings = {
             "FEED_EXPORTERS": {"csv": FromCrawlerCsvItemExporter},
             "FEED_STORAGES": {"file": FromCrawlerFileFeedStorage},
@@ -1689,22 +1728,24 @@ class TestFeedExport(TestFeedExportBase):
                 self._random_temp_filename(): {"format": "csv"},
             },
         }
-        await self.exported_data(items=[], settings=settings)
+        await self.exported_data(items=[], mockserver=mockserver, settings=settings)
         assert FromCrawlerCsvItemExporter.init_with_crawler
         assert FromCrawlerFileFeedStorage.init_with_crawler
 
     @coroutine_test
-    async def test_str_uri(self):
+    async def test_str_uri(self, mockserver: MockServer) -> None:
         settings = {
             "FEED_STORE_EMPTY": True,
             "FEEDS": {str(self._random_temp_filename()): {"format": "csv"}},
         }
-        data = await self.exported_no_data(settings)
+        data = await self.exported_no_data(mockserver, settings)
         assert data["csv"] == b""
 
     @pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
     @coroutine_test
-    async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_success_logs_blocking_feed_storage(
+        self, mockserver: MockServer
+    ) -> None:
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1718,13 +1759,15 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar2", "baz": "quux"},
         ]
         with LogCapture() as log:
-            await self.exported_data(items, settings)
+            await self.exported_data(items, mockserver, settings)
 
         for fmt in ["json", "xml", "csv"]:
             assert f"Stored {fmt} feed (2 items)" in str(log)
 
     @coroutine_test
-    async def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_failing_logs_blocking_feed_storage(
+        self, mockserver: MockServer
+    ) -> None:
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1738,18 +1781,18 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar2", "baz": "quux"},
         ]
         with LogCapture() as log:
-            await self.exported_data(items, settings)
+            await self.exported_data(items, mockserver, settings)
 
         for fmt in ["json", "xml", "csv"]:
             assert f"Error storing {fmt} feed (2 items)" in str(log)
 
     @coroutine_test
-    async def test_extend_kwargs(self):
+    async def test_extend_kwargs(self, mockserver: MockServer) -> None:
         items = [{"foo": "FOO", "bar": "BAR"}]
 
         expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
         expected_without_title_csv = b"FOO,BAR\r\n"
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # with title
             {
                 "options": {
@@ -1777,13 +1820,16 @@ class TestFeedExport(TestFeedExportBase):
                 "FEED_EXPORT_INDENT": None,
             }
 
-            data = await self.exported_data(items, settings)
+            data = await self.exported_data(items, mockserver, settings)
             assert data[feed_options["format"]] == row["expected"]
 
     @coroutine_test
-    async def test_storage_file_no_postprocessing(self):
+    async def test_storage_file_no_postprocessing(self, mockserver: MockServer) -> None:
         @implementer(IFeedStorage)
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1799,13 +1845,17 @@ class TestFeedExport(TestFeedExportBase):
             "FEEDS": {self._random_temp_filename(): {"format": "jsonlines"}},
             "FEED_STORAGES": {"file": Storage},
         }
-        await self.exported_no_data(settings)
+        await self.exported_no_data(mockserver, settings)
         assert Storage.open_file is Storage.store_file
 
     @coroutine_test
-    async def test_storage_file_postprocessing(self):
+    async def test_storage_file_postprocessing(self, mockserver: MockServer) -> None:
         @implementer(IFeedStorage)
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+            file_was_closed: bool
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1829,7 +1879,7 @@ class TestFeedExport(TestFeedExportBase):
             },
             "FEED_STORAGES": {"file": Storage},
         }
-        await self.exported_no_data(settings)
+        await self.exported_no_data(mockserver, settings)
         assert Storage.open_file is Storage.store_file
         assert not Storage.file_was_closed
 
@@ -1856,7 +1906,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         return str(Path(self.temp_dir, name))
 
     async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
+        self, mockserver: MockServer, spider_cls: type[Spider], settings: dict[str, Any]
     ) -> dict[str, bytes | None]:
         """Run spider with specified settings; return exported data with filename."""
 
@@ -1868,7 +1918,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
 
         content: dict[str, bytes | None] = {}
         try:
-            spider_cls.start_urls = [self.mockserver.url("/")]
+            spider_cls.start_urls = [mockserver.url("/")]
             crawler = get_crawler(spider_cls, settings)
             await crawler.crawl_async()
 
@@ -1901,7 +1951,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         return data_stream.read()
 
     @coroutine_test
-    async def test_gzip_plugin(self):
+    async def test_gzip_plugin(self, mockserver: MockServer) -> None:
         filename = self._named_tempfile("gzip_file")
 
         settings = {
@@ -1913,14 +1963,14 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
         try:
             gzip.decompress(data[filename])
         except OSError:
             pytest.fail("Received invalid gzip data.")
 
     @coroutine_test
-    async def test_gzip_plugin_compresslevel(self):
+    async def test_gzip_plugin_compresslevel(self, mockserver: MockServer) -> None:
         filename_to_compressed = {
             self._named_tempfile("compresslevel_0"): self.get_gzip_compressed(
                 self.expected, compresslevel=0
@@ -1949,7 +1999,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, compressed in filename_to_compressed.items():
             result = gzip.decompress(data[filename])
@@ -1957,7 +2007,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == self.expected
 
     @coroutine_test
-    async def test_gzip_plugin_mtime(self):
+    async def test_gzip_plugin_mtime(self, mockserver: MockServer) -> None:
         filename_to_compressed = {
             self._named_tempfile("mtime_123"): self.get_gzip_compressed(
                 self.expected, mtime=123
@@ -1984,7 +2034,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, compressed in filename_to_compressed.items():
             result = gzip.decompress(data[filename])
@@ -1992,7 +2042,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == self.expected
 
     @coroutine_test
-    async def test_gzip_plugin_filename(self):
+    async def test_gzip_plugin_filename(self, mockserver: MockServer) -> None:
         filename_to_compressed = {
             self._named_tempfile("filename_FILE1"): self.get_gzip_compressed(
                 self.expected, filename="FILE1"
@@ -2019,7 +2069,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, compressed in filename_to_compressed.items():
             result = gzip.decompress(data[filename])
@@ -2027,7 +2077,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == self.expected
 
     @coroutine_test
-    async def test_lzma_plugin(self):
+    async def test_lzma_plugin(self, mockserver: MockServer) -> None:
         filename = self._named_tempfile("lzma_file")
 
         settings = {
@@ -2039,14 +2089,14 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
         try:
             lzma.decompress(data[filename])
         except lzma.LZMAError:
             pytest.fail("Received invalid lzma data.")
 
     @coroutine_test
-    async def test_lzma_plugin_format(self):
+    async def test_lzma_plugin_format(self, mockserver: MockServer) -> None:
         filename_to_compressed = {
             self._named_tempfile("format_FORMAT_XZ"): lzma.compress(
                 self.expected, format=lzma.FORMAT_XZ
@@ -2071,7 +2121,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, compressed in filename_to_compressed.items():
             result = lzma.decompress(data[filename])
@@ -2079,7 +2129,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == self.expected
 
     @coroutine_test
-    async def test_lzma_plugin_check(self):
+    async def test_lzma_plugin_check(self, mockserver: MockServer) -> None:
         filename_to_compressed = {
             self._named_tempfile("check_CHECK_NONE"): lzma.compress(
                 self.expected, check=lzma.CHECK_NONE
@@ -2104,7 +2154,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, compressed in filename_to_compressed.items():
             result = lzma.decompress(data[filename])
@@ -2112,7 +2162,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == self.expected
 
     @coroutine_test
-    async def test_lzma_plugin_preset(self):
+    async def test_lzma_plugin_preset(self, mockserver: MockServer) -> None:
         filename_to_compressed = {
             self._named_tempfile("preset_PRESET_0"): lzma.compress(
                 self.expected, preset=0
@@ -2137,7 +2187,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, compressed in filename_to_compressed.items():
             result = lzma.decompress(data[filename])
@@ -2145,7 +2195,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == self.expected
 
     @coroutine_test
-    async def test_lzma_plugin_filters(self):
+    async def test_lzma_plugin_filters(self, mockserver: MockServer) -> None:
         if "PyPy" in sys.version:
             # https://foss.heptapod.net/pypy/pypy/-/issues/3527
             pytest.skip("lzma filters doesn't work in PyPy")
@@ -2164,13 +2214,13 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
         assert compressed == data[filename]
         result = lzma.decompress(data[filename])
         assert result == self.expected
 
     @coroutine_test
-    async def test_bz2_plugin(self):
+    async def test_bz2_plugin(self, mockserver: MockServer) -> None:
         filename = self._named_tempfile("bz2_file")
 
         settings = {
@@ -2182,14 +2232,14 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
         try:
             bz2.decompress(data[filename])
         except OSError:
             pytest.fail("Received invalid bz2 data.")
 
     @coroutine_test
-    async def test_bz2_plugin_compresslevel(self):
+    async def test_bz2_plugin_compresslevel(self, mockserver: MockServer) -> None:
         filename_to_compressed = {
             self._named_tempfile("compresslevel_1"): bz2.compress(
                 self.expected, compresslevel=1
@@ -2214,7 +2264,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, compressed in filename_to_compressed.items():
             result = bz2.decompress(data[filename])
@@ -2222,7 +2272,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == self.expected
 
     @coroutine_test
-    async def test_custom_plugin(self):
+    async def test_custom_plugin(self, mockserver: MockServer) -> None:
         filename = self._named_tempfile("csv_file")
 
         settings = {
@@ -2234,11 +2284,11 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
         assert data[filename] == self.expected
 
     @coroutine_test
-    async def test_custom_plugin_with_parameter(self):
+    async def test_custom_plugin_with_parameter(self, mockserver: MockServer) -> None:
         expected = b"foo\r\n\nbar\r\n\n"
         filename = self._named_tempfile("newline")
 
@@ -2252,14 +2302,14 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
         assert data[filename] == expected
 
     @coroutine_test
-    async def test_custom_plugin_with_compression(self):
+    async def test_custom_plugin_with_compression(self, mockserver: MockServer) -> None:
         expected = b"foo\r\n\nbar\r\n\n"
 
-        filename_to_decompressor = {
+        filename_to_decompressor: dict[str, Callable[[bytes], bytes]] = {
             self._named_tempfile("bz2"): bz2.decompress,
             self._named_tempfile("lzma"): lzma.decompress,
             self._named_tempfile("gzip"): gzip.decompress,
@@ -2294,14 +2344,16 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
         for filename, decompressor in filename_to_decompressor.items():
             result = decompressor(data[filename])
             assert result == expected
 
     @coroutine_test
-    async def test_exports_compatibility_with_postproc(self):
+    async def test_exports_compatibility_with_postproc(
+        self, mockserver: MockServer
+    ) -> None:
         filename_to_expected = {
             self._named_tempfile("csv"): b"foo\r\nbar\r\n",
             self._named_tempfile("json"): b'[\n{"foo": "bar"}\n]',
@@ -2340,8 +2392,9 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(self.items, settings)
+        data = await self.exported_data(self.items, mockserver, settings)
 
+        expected: Any
         for filename, result in data.items():
             if "pickle" in filename:
                 expected, result = self.items[0], pickle.loads(result)
@@ -2356,7 +2409,7 @@ class TestBatchDeliveries(TestFeedExportBase):
     _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
 
     async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
+        self, mockserver: MockServer, spider_cls: type[Spider], settings: dict[str, Any]
     ) -> dict[str, list[bytes]]:
         """Run spider with specified settings; return exported data."""
 
@@ -2365,7 +2418,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             build_url(file_path): feed for file_path, feed in FEEDS.items()
         }
         content: defaultdict[str, list[bytes]] = defaultdict(list)
-        spider_cls.start_urls = [self.mockserver.url("/")]
+        spider_cls.start_urls = [mockserver.url("/")]
         crawler = get_crawler(spider_cls, settings)
         await crawler.crawl_async()
 
@@ -2378,7 +2431,13 @@ class TestBatchDeliveries(TestFeedExportBase):
                 content[feed["format"]].append(file.read_bytes())
         return content
 
-    async def assertExportedJsonLines(self, items, rows, settings=None):
+    async def assertExportedJsonLines(
+        self,
+        items: Iterable[Any],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         settings = settings or {}
         settings.update(
             {
@@ -2391,7 +2450,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         )
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for batch in data["jl"]:
             got_batch = [
                 json.loads(to_unicode(batch_item)) for batch_item in batch.splitlines()
@@ -2399,7 +2458,14 @@ class TestBatchDeliveries(TestFeedExportBase):
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
             assert got_batch == expected_batch
 
-    async def assertExportedCsv(self, items, header, rows, settings=None):
+    async def assertExportedCsv(
+        self,
+        items: Iterable[Any],
+        header: Iterable[str],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         settings = settings or {}
         settings.update(
             {
@@ -2411,14 +2477,20 @@ class TestBatchDeliveries(TestFeedExportBase):
             }
         )
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for batch in data["csv"]:
             got_batch = csv.DictReader(to_unicode(batch).splitlines())
             assert list(header) == got_batch.fieldnames
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
             assert list(got_batch) == expected_batch
 
-    async def assertExportedXml(self, items, rows, settings=None):
+    async def assertExportedXml(
+        self,
+        items: Iterable[Any],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         settings = settings or {}
         settings.update(
             {
@@ -2431,14 +2503,20 @@ class TestBatchDeliveries(TestFeedExportBase):
         )
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for batch in data["xml"]:
             root = lxml.etree.fromstring(batch)
             got_batch = [{e.tag: e.text for e in it} for it in root.findall("item")]
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
             assert got_batch == expected_batch
 
-    async def assertExportedMultiple(self, items, rows, settings=None):
+    async def assertExportedMultiple(
+        self,
+        items: Iterable[Any],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         settings = settings or {}
         settings.update(
             {
@@ -2454,7 +2532,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         )
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         # XML
         xml_rows = rows.copy()
         for batch in data["xml"]:
@@ -2469,7 +2547,13 @@ class TestBatchDeliveries(TestFeedExportBase):
             expected_batch, json_rows = json_rows[:batch_size], json_rows[batch_size:]
             assert got_batch == expected_batch
 
-    async def assertExportedPickle(self, items, rows, settings=None):
+    async def assertExportedPickle(
+        self,
+        items: Iterable[Any],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         settings = settings or {}
         settings.update(
             {
@@ -2482,14 +2566,20 @@ class TestBatchDeliveries(TestFeedExportBase):
         )
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
 
         for batch in data["pickle"]:
             got_batch = self._load_until_eof(batch, load_func=pickle.load)
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
             assert got_batch == expected_batch
 
-    async def assertExportedMarshal(self, items, rows, settings=None):
+    async def assertExportedMarshal(
+        self,
+        items: Iterable[Any],
+        rows: list[dict[str, Any]],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         settings = settings or {}
         settings.update(
             {
@@ -2502,7 +2592,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         )
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
 
         for batch in data["marshal"]:
             got_batch = self._load_until_eof(batch, load_func=marshal.load)
@@ -2510,7 +2600,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             assert got_batch == expected_batch
 
     @coroutine_test
-    async def test_export_items(self):
+    async def test_export_items(self, mockserver: MockServer) -> None:
         """Test partial deliveries in all supported formats"""
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2524,7 +2614,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         ]
         settings = {"FEED_EXPORT_BATCH_ITEM_COUNT": 2}
         header = self.MyItem.fields.keys()
-        await self.assertExported(items, header, rows, settings=settings)
+        await self.assertExported(items, header, rows, mockserver, settings=settings)
 
     def test_wrong_path(self):
         """If path is without %(batch_time)s and %(batch_id) an exception must be raised"""
@@ -2539,7 +2629,9 @@ class TestBatchDeliveries(TestFeedExportBase):
             FeedExporter(crawler)
 
     @coroutine_test
-    async def test_export_no_items_not_store_empty(self):
+    async def test_export_no_items_not_store_empty(
+        self, mockserver: MockServer
+    ) -> None:
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
                 "FEEDS": {
@@ -2550,12 +2642,12 @@ class TestBatchDeliveries(TestFeedExportBase):
                 "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
                 "FEED_STORE_EMPTY": False,
             }
-            data = await self.exported_no_data(settings)
+            data = await self.exported_no_data(mockserver, settings)
             data = dict(data)
             assert len(data[fmt]) == 0
 
     @coroutine_test
-    async def test_export_no_items_store_empty(self):
+    async def test_export_no_items_store_empty(self, mockserver: MockServer) -> None:
         formats = (
             ("json", b"[]"),
             ("jsonlines", b""),
@@ -2574,12 +2666,12 @@ class TestBatchDeliveries(TestFeedExportBase):
                 "FEED_EXPORT_INDENT": None,
                 "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
             }
-            data = await self.exported_no_data(settings)
+            data = await self.exported_no_data(mockserver, settings)
             data = dict(data)
             assert data[fmt][0] == expctd
 
     @coroutine_test
-    async def test_export_multiple_configs(self):
+    async def test_export_multiple_configs(self, mockserver: MockServer) -> None:
         items = [
             {"foo": "FOO", "bar": "BAR"},
             {"foo": "FOO1", "bar": "BAR1"},
@@ -2629,13 +2721,13 @@ class TestBatchDeliveries(TestFeedExportBase):
             },
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for fmt, expected in formats.items():
             for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
     @coroutine_test
-    async def test_batch_item_count_feeds_setting(self):
+    async def test_batch_item_count_feeds_setting(self, mockserver: MockServer) -> None:
         items = [{"foo": "FOO"}, {"foo": "FOO1"}]
         formats = {
             "json": [
@@ -2653,13 +2745,13 @@ class TestBatchDeliveries(TestFeedExportBase):
                 },
             },
         }
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         for fmt, expected in formats.items():
             for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
     @coroutine_test
-    async def test_batch_path_differ(self):
+    async def test_batch_path_differ(self, mockserver: MockServer) -> None:
         """
         Test that the name of all batch files differ from each other.
         So %(batch_id)d replaced with the current id.
@@ -2677,11 +2769,13 @@ class TestBatchDeliveries(TestFeedExportBase):
             },
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
-        data = await self.exported_data(items, settings)
+        data = await self.exported_data(items, mockserver, settings)
         assert len(items) == len(data["json"])
 
     @inline_callbacks_test
-    def test_stats_batch_file_success(self):
+    def test_stats_batch_file_success(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         settings = {
             "FEEDS": {
                 build_url(
@@ -2693,13 +2787,16 @@ class TestBatchDeliveries(TestFeedExportBase):
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
         crawler = get_crawler(ItemSpider, settings)
-        yield crawler.crawl(total=2, mockserver=self.mockserver)
+        yield crawler.crawl(total=2, mockserver=mockserver)
+        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
     @pytest.mark.requires_boto3
     @inline_callbacks_test
-    def test_s3_export(self):
+    def test_s3_export(
+        self, mockserver: MockServer
+    ) -> Generator[Deferred[Any], Any, None]:
         bucket = "mybucket"
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2708,7 +2805,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         ]
 
         class CustomS3FeedStorage(S3FeedStorage):
-            stubs = []
+            stubs: list[Stubber] = []
 
             def open(self, *args, **kwargs):
                 from botocore import __version__ as botocore_version  # noqa: PLC0415
@@ -2758,13 +2855,14 @@ class TestBatchDeliveries(TestFeedExportBase):
             def parse(self, response):
                 yield from items
 
-        TestSpider.start_urls = [self.mockserver.url("/")]
+        TestSpider.start_urls = [mockserver.url("/")]
         crawler = get_crawler(TestSpider, settings)
         yield crawler.crawl()
 
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
+        assert crawler.stats
         assert (
             "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
         )

@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from twisted.internet.defer import Deferred, fail, succeed
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
@@ -13,8 +14,11 @@ from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
+    from tests.mockserver.http import MockServer
 
 
 class SimplePipeline:

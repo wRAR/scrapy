@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import platform
@@ -7,9 +9,8 @@ import subprocess
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from packaging.version import parse as parse_version
@@ -39,9 +40,14 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
-from tests.mockserver.http import MockServer
 from tests.utils import get_script_run_env
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from tests.mockserver.http import MockServer
+
 
 BASE_SETTINGS: dict[str, Any] = {}
 

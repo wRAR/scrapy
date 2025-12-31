@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -9,9 +11,15 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from twisted.internet.defer import Deferred
+
+    from tests.mockserver.http import MockServer
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
@@ -55,22 +63,15 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
 
 class TestCrawl:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     def setup_method(self):
         self.runner = CrawlerRunner()
 
     @inline_callbacks_test
-    def test_delay(self):
+    def test_delay(self, mockserver: MockServer) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
-        yield crawler.crawl(mockserver=self.mockserver)
+        yield crawler.crawl(mockserver=mockserver)
+        assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
+        assert crawler.engine
         slots = crawler.engine.downloader.slots
         times = crawler.spider.times
         tolerance = 0.3
