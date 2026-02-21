@@ -1,11 +1,17 @@
-from testfixtures import LogCapture
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from scrapy import Request, signals
 from scrapy.http.response import Response
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import SingleRequestSpider
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    import pytest
+
+    from tests.mockserver.http import MockServer
 
 OVERRIDDEN_URL = "https://example.org"
 
@@ -62,163 +68,165 @@ class AlternativeCallbacksMiddleware:
         return response.replace(request=new_request)
 
 
-class TestCrawl:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
+@coroutine_test
+async def test_response_200(mockserver: MockServer) -> None:
+    url = mockserver.url("/status?n=200")
+    crawler = get_crawler(SingleRequestSpider)
+    await crawler.crawl_async(seed=url, mockserver=mockserver)
+    response = crawler.spider.meta["responses"][0]
+    assert response.request.url == url
 
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
 
-    @inline_callbacks_test
-    def test_response_200(self):
-        url = self.mockserver.url("/status?n=200")
+@coroutine_test
+async def test_response_error(mockserver: MockServer) -> None:
+    for status in ("404", "500"):
+        url = mockserver.url(f"/status?n={status}")
         crawler = get_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        response = crawler.spider.meta["responses"][0]
-        assert response.request.url == url
-
-    @inline_callbacks_test
-    def test_response_error(self):
-        for status in ("404", "500"):
-            url = self.mockserver.url(f"/status?n={status}")
-            crawler = get_crawler(SingleRequestSpider)
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
-            failure = crawler.spider.meta["failure"]
-            response = failure.value.response
-            assert failure.request.url == url
-            assert response.request.url == url
-
-    @inline_callbacks_test
-    def test_downloader_middleware_raise_exception(self):
-        url = self.mockserver.url("/status?n=200")
-        crawler = get_crawler(
-            SingleRequestSpider,
-            {
-                "DOWNLOADER_MIDDLEWARES": {
-                    RaiseExceptionRequestMiddleware: 590,
-                },
-            },
-        )
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
         failure = crawler.spider.meta["failure"]
+        response = failure.value.response
         assert failure.request.url == url
-        assert isinstance(failure.value, ZeroDivisionError)
-
-    @inline_callbacks_test
-    def test_downloader_middleware_override_request_in_process_response(self):
-        """
-        Downloader middleware which returns a response with an specific 'request' attribute.
-
-        * The spider callback should receive the overridden response.request
-        * Handlers listening to the response_received signal should receive the overridden response.request
-        * The "crawled" log message should show the overridden response.request
-        """
-        signal_params = {}
-
-        def signal_handler(response, request, spider):
-            signal_params["response"] = response
-            signal_params["request"] = request
-
-        url = self.mockserver.url("/status?n=200")
-        crawler = get_crawler(
-            SingleRequestSpider,
-            {
-                "DOWNLOADER_MIDDLEWARES": {
-                    ProcessResponseMiddleware: 595,
-                }
-            },
-        )
-        crawler.signals.connect(signal_handler, signal=signals.response_received)
-
-        with LogCapture() as log:
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
-
-        response = crawler.spider.meta["responses"][0]
-        assert response.request.url == OVERRIDDEN_URL
-
-        assert signal_params["response"].url == url
-        assert signal_params["request"].url == OVERRIDDEN_URL
-
-        log.check_present(
-            (
-                "scrapy.core.engine",
-                "DEBUG",
-                f"Crawled (200) <GET {OVERRIDDEN_URL}> (referer: None)",
-            ),
-        )
-
-    @inline_callbacks_test
-    def test_downloader_middleware_override_in_process_exception(self):
-        """
-        An exception is raised but caught by the next middleware, which
-        returns a Response with a specific 'request' attribute.
-
-        The spider callback should receive the overridden response.request
-        """
-        url = self.mockserver.url("/status?n=200")
-        crawler = get_crawler(
-            SingleRequestSpider,
-            {
-                "DOWNLOADER_MIDDLEWARES": {
-                    RaiseExceptionRequestMiddleware: 590,
-                    CatchExceptionOverrideRequestMiddleware: 595,
-                },
-            },
-        )
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        response = crawler.spider.meta["responses"][0]
-        assert response.body == b"Caught ZeroDivisionError"
-        assert response.request.url == OVERRIDDEN_URL
-
-    @inline_callbacks_test
-    def test_downloader_middleware_do_not_override_in_process_exception(self):
-        """
-        An exception is raised but caught by the next middleware, which
-        returns a Response without a specific 'request' attribute.
-
-        The spider callback should receive the original response.request
-        """
-        url = self.mockserver.url("/status?n=200")
-        crawler = get_crawler(
-            SingleRequestSpider,
-            {
-                "DOWNLOADER_MIDDLEWARES": {
-                    RaiseExceptionRequestMiddleware: 590,
-                    CatchExceptionDoNotOverrideRequestMiddleware: 595,
-                },
-            },
-        )
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        response = crawler.spider.meta["responses"][0]
-        assert response.body == b"Caught ZeroDivisionError"
         assert response.request.url == url
 
-    @inline_callbacks_test
-    def test_downloader_middleware_alternative_callback(self):
-        """
-        Downloader middleware which returns a response with a
-        specific 'request' attribute, with an alternative callback
-        """
-        crawler = get_crawler(
-            AlternativeCallbacksSpider,
-            {
-                "DOWNLOADER_MIDDLEWARES": {
-                    AlternativeCallbacksMiddleware: 595,
-                }
+
+@coroutine_test
+async def test_downloader_middleware_raise_exception(mockserver: MockServer) -> None:
+    url = mockserver.url("/status?n=200")
+    crawler = get_crawler(
+        SingleRequestSpider,
+        {
+            "DOWNLOADER_MIDDLEWARES": {
+                RaiseExceptionRequestMiddleware: 590,
             },
-        )
+        },
+    )
+    await crawler.crawl_async(seed=url, mockserver=mockserver)
+    failure = crawler.spider.meta["failure"]
+    assert failure.request.url == url
+    assert isinstance(failure.value, ZeroDivisionError)
 
-        with LogCapture() as log:
-            url = self.mockserver.url("/status?n=200")
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
 
-        log.check_present(
-            (
-                "alternative_callbacks_spider",
-                "INFO",
-                "alt_callback was invoked with foo=bar",
-            ),
-        )
+@coroutine_test
+async def test_downloader_middleware_override_request_in_process_response(
+    caplog: pytest.LogCaptureFixture,
+    mockserver: MockServer,
+) -> None:
+    """
+    Downloader middleware which returns a response with an specific 'request' attribute.
+
+    * The spider callback should receive the overridden response.request
+    * Handlers listening to the response_received signal should receive the overridden response.request
+    * The "crawled" log message should show the overridden response.request
+    """
+    signal_params = {}
+
+    def signal_handler(response, request, spider):
+        signal_params["response"] = response
+        signal_params["request"] = request
+
+    url = mockserver.url("/status?n=200")
+    crawler = get_crawler(
+        SingleRequestSpider,
+        {
+            "DOWNLOADER_MIDDLEWARES": {
+                ProcessResponseMiddleware: 595,
+            }
+        },
+    )
+    crawler.signals.connect(signal_handler, signal=signals.response_received)
+
+    with caplog.at_level("DEBUG"):
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+
+    response = crawler.spider.meta["responses"][0]
+    assert response.request.url == OVERRIDDEN_URL
+
+    assert signal_params["response"].url == url
+    assert signal_params["request"].url == OVERRIDDEN_URL
+
+    assert (
+        "scrapy.core.engine",
+        "DEBUG",
+        f"Crawled (200) <GET {OVERRIDDEN_URL}> (referer: None)",
+    ) in caplog.record_tuples
+
+
+@coroutine_test
+async def test_downloader_middleware_override_in_process_exception(
+    mockserver: MockServer,
+) -> None:
+    """
+    An exception is raised but caught by the next middleware, which
+    returns a Response with a specific 'request' attribute.
+
+    The spider callback should receive the overridden response.request
+    """
+    url = mockserver.url("/status?n=200")
+    crawler = get_crawler(
+        SingleRequestSpider,
+        {
+            "DOWNLOADER_MIDDLEWARES": {
+                RaiseExceptionRequestMiddleware: 590,
+                CatchExceptionOverrideRequestMiddleware: 595,
+            },
+        },
+    )
+    await crawler.crawl_async(seed=url, mockserver=mockserver)
+    response = crawler.spider.meta["responses"][0]
+    assert response.body == b"Caught ZeroDivisionError"
+    assert response.request.url == OVERRIDDEN_URL
+
+
+@coroutine_test
+async def test_downloader_middleware_do_not_override_in_process_exception(
+    mockserver: MockServer,
+) -> None:
+    """
+    An exception is raised but caught by the next middleware, which
+    returns a Response without a specific 'request' attribute.
+
+    The spider callback should receive the original response.request
+    """
+    url = mockserver.url("/status?n=200")
+    crawler = get_crawler(
+        SingleRequestSpider,
+        {
+            "DOWNLOADER_MIDDLEWARES": {
+                RaiseExceptionRequestMiddleware: 590,
+                CatchExceptionDoNotOverrideRequestMiddleware: 595,
+            },
+        },
+    )
+    await crawler.crawl_async(seed=url, mockserver=mockserver)
+    response = crawler.spider.meta["responses"][0]
+    assert response.body == b"Caught ZeroDivisionError"
+    assert response.request.url == url
+
+
+@coroutine_test
+async def test_downloader_middleware_alternative_callback(
+    caplog: pytest.LogCaptureFixture,
+    mockserver: MockServer,
+) -> None:
+    """
+    Downloader middleware which returns a response with a
+    specific 'request' attribute, with an alternative callback
+    """
+    crawler = get_crawler(
+        AlternativeCallbacksSpider,
+        {
+            "DOWNLOADER_MIDDLEWARES": {
+                AlternativeCallbacksMiddleware: 595,
+            }
+        },
+    )
+
+    url = mockserver.url("/status?n=200")
+    with caplog.at_level("INFO"):
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+
+    assert (
+        "alternative_callbacks_spider",
+        "INFO",
+        "alt_callback was invoked with foo=bar",
+    ) in caplog.record_tuples
