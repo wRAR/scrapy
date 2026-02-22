@@ -1,19 +1,25 @@
+from __future__ import annotations
+
 import json
 import os
 import re
 import sys
 from pathlib import Path
 from subprocess import PIPE, Popen
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit, urlunsplit
 
 import pytest
-from testfixtures import LogCapture
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from tests.mockserver.http import MockServer
 
 
 class MitmProxy:
@@ -63,55 +69,57 @@ def _wrong_credentials(proxy_url):
 
 @pytest.mark.requires_mitmproxy
 class TestProxyConnect:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def proxy(self) -> Generator[None]:
         self._oldenv = os.environ.copy()
         self._proxy = MitmProxy()
         proxy_url = self._proxy.start()
         os.environ["https_proxy"] = proxy_url
         os.environ["http_proxy"] = proxy_url
+        try:
+            yield
+        finally:
+            self._proxy.stop()
+            os.environ = self._oldenv
 
-    def teardown_method(self):
-        self._proxy.stop()
-        os.environ = self._oldenv
-
-    @inline_callbacks_test
-    def test_https_connect_tunnel(self):
+    @coroutine_test
+    async def test_https_connect_tunnel(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         crawler = get_crawler(SimpleSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
-        self._assert_got_response_code(200, log)
+        with caplog.at_level("DEBUG"):
+            await crawler.crawl_async(mockserver.url("/status?n=200", is_secure=True))
+        self._assert_got_response_code(200, caplog.text)
 
-    @inline_callbacks_test
-    def test_https_tunnel_auth_error(self):
+    @coroutine_test
+    async def test_https_tunnel_auth_error(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         os.environ["https_proxy"] = _wrong_credentials(os.environ["https_proxy"])
         crawler = get_crawler(SimpleSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
+        with caplog.at_level("DEBUG"):
+            await crawler.crawl_async(mockserver.url("/status?n=200", is_secure=True))
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
-        self._assert_got_tunnel_error(log)
+        self._assert_got_tunnel_error(caplog.text)
 
-    @inline_callbacks_test
-    def test_https_tunnel_without_leak_proxy_authorization_header(self):
-        request = Request(self.mockserver.url("/echo", is_secure=True))
+    @coroutine_test
+    async def test_https_tunnel_without_leak_proxy_authorization_header(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(mockserver.url("/echo", is_secure=True))
         crawler = get_crawler(SingleRequestSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(seed=request)
-        self._assert_got_response_code(200, log)
+        with caplog.at_level("DEBUG"):
+            await crawler.crawl_async(seed=request)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
         echo = json.loads(crawler.spider.meta["responses"][0].text)
         assert "Proxy-Authorization" not in echo["headers"]
 
-    def _assert_got_response_code(self, code, log):
-        assert str(log).count(f"Crawled ({code})") == 1
+    @staticmethod
+    def _assert_got_response_code(code: int, log: str) -> None:
+        assert log.count(f"Crawled ({code})") == 1
 
-    def _assert_got_tunnel_error(self, log):
-        assert "TunnelError" in str(log)
+    @staticmethod
+    def _assert_got_tunnel_error(log: str) -> None:
+        assert "TunnelError" in log
