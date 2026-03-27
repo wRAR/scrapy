@@ -7,7 +7,7 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import ItemT, SingleCallbackResultT
     from scrapy.logformatter import LogFormatter
     from scrapy.signalmanager import SignalManager
 
@@ -52,7 +53,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-_T = TypeVar("_T")
 QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
 
 
@@ -252,7 +252,7 @@ class Scraper:
                 f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}"
             )
 
-        output: Iterable[Any] | AsyncIterator[Any]
+        output: Iterable[SingleCallbackResultT] | AsyncIterator[SingleCallbackResultT]
         if isinstance(result, Response):
             try:
                 # call the spider middlewares and the request callback with the response
@@ -298,7 +298,9 @@ class Scraper:
 
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
-    ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:  # pragma: no cover
+    ) -> Deferred[
+        Iterable[SingleCallbackResultT] | AsyncIterator[SingleCallbackResultT]
+    ]:  # pragma: no cover
         warnings.warn(
             "Scraper.call_spider() is deprecated, use call_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -308,7 +310,7 @@ class Scraper:
 
     async def call_spider_async(
         self, result: Response | Failure, request: Request
-    ) -> Iterable[Any] | AsyncIterator[Any]:
+    ) -> Iterable[SingleCallbackResultT] | AsyncIterator[SingleCallbackResultT]:
         """Call the request callback or errback with the response or failure.
 
         .. versionadded:: 2.13
@@ -388,7 +390,7 @@ class Scraper:
 
     def handle_spider_output(
         self,
-        result: Iterable[_T] | AsyncIterator[_T],
+        result: Iterable[SingleCallbackResultT] | AsyncIterator[SingleCallbackResultT],
         request: Request,
         response: Response | Failure,
         spider: Spider | None = None,
@@ -405,7 +407,7 @@ class Scraper:
 
     async def handle_spider_output_async(
         self,
-        result: Iterable[_T] | AsyncIterator[_T],
+        result: Iterable[SingleCallbackResultT] | AsyncIterator[SingleCallbackResultT],
         request: Request,
         response: Response | Failure,
     ) -> None:
@@ -413,7 +415,7 @@ class Scraper:
 
         .. versionadded:: 2.13
         """
-        it: Iterable[_T] | AsyncIterator[_T]
+        it: Iterable[SingleCallbackResultT] | AsyncIterator[SingleCallbackResultT]
         if is_asyncio_available():
             if isinstance(result, AsyncIterator):
                 it = aiter_errback(result, self.handle_spider_error, request, response)
@@ -445,7 +447,7 @@ class Scraper:
         )
 
     def _process_spidermw_output(
-        self, output: Any, response: Response | Failure
+        self, output: SingleCallbackResultT, response: Response | Failure
     ) -> Deferred[None]:
         """Process each Request/Item (given in the output parameter) returned
         from the given spider.
@@ -455,7 +457,7 @@ class Scraper:
         return deferred_from_coro(self._process_spidermw_output_async(output, response))
 
     async def _process_spidermw_output_async(
-        self, output: Any, response: Response | Failure
+        self, output: SingleCallbackResultT, response: Response | Failure
     ) -> None:
         """Process each Request/Item (given in the output parameter) returned
         from the given spider.
@@ -470,7 +472,7 @@ class Scraper:
             await self.start_itemproc_async(output, response=response)
 
     def start_itemproc(
-        self, item: Any, *, response: Response | Failure | None
+        self, item: ItemT, *, response: Response | Failure | None
     ) -> Deferred[None]:  # pragma: no cover
         """Send *item* to the item pipelines for processing.
 
@@ -485,7 +487,7 @@ class Scraper:
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
 
     async def start_itemproc_async(
-        self, item: Any, *, response: Response | Failure | None
+        self, item: ItemT, *, response: Response | Failure | None
     ) -> None:
         """Send *item* to the item pipelines for processing.
 

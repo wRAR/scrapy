@@ -13,6 +13,7 @@ from typing import (
     Any,
     AnyStr,
     Concatenate,
+    NewType,
     NoReturn,
     TypeAlias,
     TypedDict,
@@ -30,7 +31,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 
     from twisted.python.failure import Failure
 
@@ -40,7 +41,15 @@ if TYPE_CHECKING:
     # circular import
     from scrapy.http import Response
 
-    CallbackT: TypeAlias = Callable[Concatenate[Response, ...], Any]
+    ItemT = NewType("ItemT", object)  # temporarily here
+    SingleCallbackResultT: TypeAlias = ItemT | "Request"
+    CallbackResultT: TypeAlias = (
+        SingleCallbackResultT
+        | Iterable[SingleCallbackResultT]
+        | AsyncIterator[SingleCallbackResultT]
+        | None
+    )
+    CallbackT: TypeAlias = Callable[Concatenate[Response, ...], CallbackResultT]
 
 
 class VerboseCookie(TypedDict):

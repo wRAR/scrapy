@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from twisted.python.failure import Failure
 
     from scrapy import Spider
+    from scrapy.http.request import ItemT
     from scrapy.settings import Settings
 
 
@@ -46,7 +47,7 @@ class ItemPipelineManager(MiddlewareManager):
             self.methods["process_item"].append(pipe.process_item)
             self._check_mw_method_spider_arg(pipe.process_item)
 
-    def process_item(self, item: Any, spider: Spider) -> Deferred[Any]:
+    def process_item(self, item: ItemT, spider: Spider) -> Deferred[Any]:
         warnings.warn(
             f"{global_object_name(type(self))}.process_item() is deprecated, use process_item_async() instead.",
             category=ScrapyDeprecationWarning,
@@ -55,7 +56,7 @@ class ItemPipelineManager(MiddlewareManager):
         self._set_compat_spider(spider)
         return deferred_from_coro(self.process_item_async(item))
 
-    async def process_item_async(self, item: Any) -> Any:
+    async def process_item_async(self, item: ItemT) -> Any:
         return await self._process_chain(
             "process_item", item, add_spider=True, warn_deferred=True
         )

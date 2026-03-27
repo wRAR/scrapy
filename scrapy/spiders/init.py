@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
     from scrapy import Request
     from scrapy.http import Response
+    from scrapy.http.request import ItemT
 
 
 class InitSpider(Spider):
@@ -30,7 +31,7 @@ class InitSpider(Spider):
             stacklevel=2,
         )
 
-    async def start(self) -> AsyncIterator[Any]:
+    async def start(self) -> AsyncIterator[Request | ItemT]:
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
@@ -38,9 +39,11 @@ class InitSpider(Spider):
             for item_or_request in self.start_requests():
                 yield item_or_request
 
-    def start_requests(self) -> Iterable[Request]:
-        self._postinit_reqs: Iterable[Request] = super().start_requests()
-        return cast("Iterable[Request]", iterate_spider_output(self.init_request()))
+    def start_requests(self) -> Iterable[Request | ItemT]:
+        self._postinit_reqs = super().start_requests()
+        return cast(
+            "Iterable[Request | ItemT]", iterate_spider_output(self.init_request())
+        )
 
     def initialized(self, response: Response | None = None) -> Any:
         """This method must be set as the callback of your last initialization

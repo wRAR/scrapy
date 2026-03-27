@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
@@ -15,34 +15,43 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
 
     from scrapy import Request
+    from scrapy.http.request import CallbackResultT, SingleCallbackResultT
     from scrapy.spiderloader import SpiderLoaderProtocol
 
 
 logger = logging.getLogger(__name__)
 
-_T = TypeVar("_T")
-
-
-# https://stackoverflow.com/questions/60222982
-@overload
-def iterate_spider_output(result: AsyncGenerator[_T]) -> AsyncGenerator[_T]: ...  # type: ignore[overload-overlap]
-
 
 @overload
-def iterate_spider_output(result: CoroutineType[Any, Any, _T]) -> Deferred[_T]: ...
+def iterate_spider_output(
+    result: AsyncGenerator[SingleCallbackResultT],
+) -> AsyncGenerator[SingleCallbackResultT]: ...
 
 
 @overload
-def iterate_spider_output(result: _T) -> Iterable[Any]: ...
+def iterate_spider_output(
+    result: CoroutineType[Any, Any, SingleCallbackResultT],
+) -> Deferred[SingleCallbackResultT]: ...
+
+
+@overload
+def iterate_spider_output(
+    result: SingleCallbackResultT,
+) -> Iterable[SingleCallbackResultT]: ...
 
 
 def iterate_spider_output(
-    result: Any,
-) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[_T]:
+    result: CallbackResultT | CoroutineType[Any, Any, SingleCallbackResultT],
+) -> (
+    Iterable[SingleCallbackResultT]
+    | AsyncGenerator[SingleCallbackResultT]
+    | Deferred[SingleCallbackResultT]
+):
+    """Convert a callback return value into"""
     if inspect.isasyncgen(result):
         return result
     if inspect.iscoroutine(result):
-        d = deferred_from_coro(result)
+        d: Deferred[SingleCallbackResultT] = deferred_from_coro(result)
         d.addCallback(iterate_spider_output)
         return d
     return arg_to_iter(deferred_from_coro(result))

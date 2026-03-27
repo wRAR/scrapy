@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
+    from scrapy.http.request import ItemT, SingleCallbackResultT
 
 
 class BaseSpiderMiddleware:
@@ -42,37 +43,42 @@ class BaseSpiderMiddleware:
         return cls(crawler)
 
     def process_start_requests(
-        self, start: Iterable[Any], spider: Spider
-    ) -> Iterable[Any]:
+        self, start: Iterable[Request | ItemT], spider: Spider
+    ) -> Iterable[Request | ItemT]:
         for o in start:
-            if (o := self._get_processed(o, None)) is not None:
-                yield o
+            if (processed := self._get_processed(o, None)) is not None:
+                yield processed
 
     async def process_start(self, start: AsyncIterator[Any]) -> AsyncIterator[Any]:
         async for o in start:
-            if (o := self._get_processed(o, None)) is not None:
-                yield o
+            if (processed := self._get_processed(o, None)) is not None:
+                yield processed
 
     @_warn_spider_arg
     def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider | None = None
-    ) -> Iterable[Any]:
+        self,
+        response: Response,
+        result: Iterable[SingleCallbackResultT],
+        spider: Spider | None = None,
+    ) -> Iterable[SingleCallbackResultT]:
         for o in result:
-            if (o := self._get_processed(o, response)) is not None:
-                yield o
+            if (processed := self._get_processed(o, response)) is not None:
+                yield processed
 
     @_warn_spider_arg
     async def process_spider_output_async(
         self,
         response: Response,
-        result: AsyncIterator[Any],
+        result: AsyncIterator[SingleCallbackResultT],
         spider: Spider | None = None,
-    ) -> AsyncIterator[Any]:
+    ) -> AsyncIterator[SingleCallbackResultT]:
         async for o in result:
-            if (o := self._get_processed(o, response)) is not None:
-                yield o
+            if (processed := self._get_processed(o, response)) is not None:
+                yield processed
 
-    def _get_processed(self, o: Any, response: Response | None) -> Any:
+    def _get_processed(
+        self, o: SingleCallbackResultT, response: Response | None
+    ) -> SingleCallbackResultT | None:
         if isinstance(o, Request):
             return self.get_processed_request(o, response)
         return self.get_processed_item(o, response)
@@ -97,7 +103,9 @@ class BaseSpiderMiddleware:
         """
         return request
 
-    def get_processed_item(self, item: Any, response: Response | None) -> Any:
+    def get_processed_item(
+        self, item: ItemT, response: Response | None
+    ) -> ItemT | None:
         """Return a processed item from the spider output.
 
         This method is called with a single item from the start seeds or the

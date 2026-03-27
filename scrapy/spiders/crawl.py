@@ -30,8 +30,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
-    from scrapy.http.request import CallbackT
-
+    from scrapy.http.request import CallbackT, SingleCallbackResultT
 
 _T = TypeVar("_T")
 ProcessLinksT: TypeAlias = Callable[[list[Link]], list[Link]]
@@ -121,8 +120,8 @@ class CrawlSpider(Spider):
         return []
 
     def process_results(
-        self, response: Response, results: Iterable[Any]
-    ) -> Iterable[Any]:
+        self, response: Response, results: Iterable[SingleCallbackResultT]
+    ) -> Iterable[SingleCallbackResultT]:
         return results
 
     def _build_request(self, rule_index: int, link: Link) -> Request:
@@ -169,7 +168,7 @@ class CrawlSpider(Spider):
         callback: CallbackT | None,
         cb_kwargs: dict[str, Any],
         follow: bool = True,
-    ) -> AsyncIterator[Any]:
+    ) -> AsyncIterator[SingleCallbackResultT]:
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
             if isinstance(cb_res, AsyncIterator):

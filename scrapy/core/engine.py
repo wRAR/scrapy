@@ -52,6 +52,7 @@ if TYPE_CHECKING:
 
     from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
+    from scrapy.http.request import ItemT
     from scrapy.logformatter import LogFormatter
     from scrapy.settings import BaseSettings, Settings
     from scrapy.signalmanager import SignalManager
@@ -123,7 +124,7 @@ class ExecutionEngine:
             [Spider], Coroutine[Any, Any, None] | Deferred[None] | None
         ] = spider_closed_callback
         self.start_time: float | None = None
-        self._start: AsyncIterator[Any] | None = None
+        self._start: AsyncIterator[Request | ItemT] | None = None
         self._closewait: Deferred[None] | None = None
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None

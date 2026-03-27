@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
-    from scrapy.http.request import CallbackT
+    from scrapy.http.request import CallbackT, ItemT
     from scrapy.settings import BaseSettings, _SettingsKey
     from scrapy.utils.log import SpiderLoggerAdapter
 
@@ -81,7 +81,7 @@ class Spider(object_ref):
         self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    async def start(self) -> AsyncIterator[Any]:
+    async def start(self) -> AsyncIterator[Request | ItemT]:
         """Yield the initial :class:`~scrapy.Request` objects to send.
 
         .. versionadded:: 2.13
@@ -134,7 +134,7 @@ class Spider(object_ref):
             for item_or_request in self.start_requests():
                 yield item_or_request
 
-    def start_requests(self) -> Iterable[Any]:
+    def start_requests(self) -> Iterable[Request | ItemT]:
         warnings.warn(
             (
                 "The Spider.start_requests() method is deprecated, use "
