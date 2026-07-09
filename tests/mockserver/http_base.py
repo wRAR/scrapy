@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 class BaseMockServer(ABC):
     listen_http: bool = True
     listen_https: bool = True
+    listen_h3: bool = False
 
     @property
     @abstractmethod
@@ -38,6 +39,7 @@ class BaseMockServer(ABC):
         self.host: str = "127.0.0.1"
         self.http_port: int | None = None
         self.https_port: int | None = None
+        self.h3_port: int | None = None
 
     def __enter__(self):
         self.proc = Popen(
@@ -54,6 +56,10 @@ class BaseMockServer(ABC):
             https_address = self.proc.stdout.readline().strip()
             https_parsed = urlparse(https_address)
             self.https_port = https_parsed.port
+        if self.listen_h3:
+            h3_address = self.proc.stdout.readline().strip()
+            h3_parsed = urlparse(h3_address)
+            self.h3_port = h3_parsed.port
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -62,7 +68,10 @@ class BaseMockServer(ABC):
             self.proc.communicate()
 
     def get_additional_args(self) -> list[str]:
-        return []
+        args: list[str] = []
+        if self.listen_h3:
+            args.append("--listen-h3")
+        return args
 
     def port(self, is_secure: bool = False) -> int:
         if not is_secure and not self.listen_http:

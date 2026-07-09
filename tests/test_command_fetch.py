@@ -28,7 +28,7 @@ class TestFetchCommand:
     def test_headers(self, mockserver: MockServer) -> None:
         _, out, _ = proc("fetch", mockserver.url("/text"), "--headers")
         out = out.replace("\r", "")  # required on win32
-        assert "Server: TwistedWeb" in out
+        assert "Server: hypercorn" in out
         assert "Content-Type: text/plain" in out
 
     def test_no_reactor(self, mockserver: MockServer) -> None:

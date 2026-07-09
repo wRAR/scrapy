@@ -316,7 +316,7 @@ class TestEngineBase:
         for headers in run.headers.values():
             assert b"Server" in headers
             assert headers[b"Server"]
-            assert b"TwistedWeb" in headers[b"Server"]
+            assert b"hypercorn" in headers[b"Server"]
             assert b"Date" in headers
             assert b"Content-Type" in headers
 
