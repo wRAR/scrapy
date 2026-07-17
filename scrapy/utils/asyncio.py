@@ -92,6 +92,37 @@ def is_asyncio_available() -> bool:
     return is_asyncio_reactor_installed()
 
 
+def _get_running_or_installed_loop() -> asyncio.AbstractEventLoop:
+    """Return the asyncio event loop that Scrapy uses, even if it isn't running.
+
+    This is the running loop if there is one, and the loop used by the
+    installed asyncio Twisted reactor otherwise (that loop exists, even though
+    it isn't running yet, e.g. before the reactor is started). If there is no
+    running loop and no installed asyncio reactor (e.g. in the reactorless
+    mode before the loop is started), raise :exc:`RuntimeError`.
+
+    This is meant to replace :func:`asyncio.get_event_loop`, which is
+    deprecated when called without a running event loop and raises
+    :exc:`RuntimeError` on Python 3.14+ when there is also no loop set with
+    :func:`asyncio.set_event_loop`.
+    """
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+
+    if not is_reactor_installed() or not is_asyncio_reactor_installed():
+        raise RuntimeError(
+            "There is no running asyncio event loop and no installed asyncio"
+            " Twisted reactor."
+        )
+
+    from twisted.internet import reactor
+
+    loop: asyncio.AbstractEventLoop = reactor._asyncioEventloop
+    return loop
+
+
 async def _parallel_asyncio(
     iterable: Iterable[_T] | AsyncIterator[_T],
     count: int,
@@ -175,7 +206,7 @@ class AsyncioLoopingCall:
         self._start_time = time.monotonic()
         if now:
             self._call()
-        loop = asyncio.get_event_loop()
+        loop = _get_running_or_installed_loop()
         self._task = loop.create_task(self._loop())
 
     def _to_sleep(self) -> float:
@@ -243,7 +274,7 @@ def call_later(
     .. versionadded:: 2.14.0
     """
     if is_asyncio_available():
-        loop = asyncio.get_event_loop()
+        loop = _get_running_or_installed_loop()
         return CallLaterResult.from_asyncio(loop.call_later(delay, func, *args))
 
     from twisted.internet import reactor

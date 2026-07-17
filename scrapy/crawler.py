@@ -20,6 +20,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
+from scrapy.utils.asyncio import _get_running_or_installed_loop
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     configure_logging,
@@ -506,8 +507,8 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
     When the :setting:`TWISTED_REACTOR_ENABLED` setting is set to ``True``,
     this class requires a reactor to be installed and uses it, otherwise it
-    requires a reactor to not be installed but requires an asyncio event loop
-    to be installed and uses it.
+    requires a reactor to not be installed but requires a running asyncio
+    event loop and uses it.
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -521,6 +522,9 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
         self._active: set[asyncio.Task[None]] = set()
+        # In the reactorless mode AsyncCrawlerProcess stores here the loop it
+        # installed, so that _crawl() can use it before it starts running.
+        self._reactorless_loop: asyncio.AbstractEventLoop | None = None
 
     def crawl(
         self,
@@ -588,9 +592,15 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         self.bootstrap_failed |= not getattr(crawler, "spider", None)
 
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
-        # At this point the asyncio loop has been installed either by the user
-        # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # The loop isn't running yet, e.g. this was called via
+            # AsyncCrawlerProcess.crawl() before AsyncCrawlerProcess.start().
+            # In the reactorless mode AsyncCrawlerProcess has stored the
+            # installed loop, otherwise use the loop of the installed asyncio
+            # reactor.
+            loop = self._reactorless_loop or _get_running_or_installed_loop()
         self.crawlers.add(crawler)
 
         task = loop.create_task(self._crawl_and_track(crawler, *args, **kwargs))
@@ -836,7 +846,6 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     ):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
-        self._reactorless_loop: asyncio.AbstractEventLoop | None = None
         # We want the asyncio event loop to be installed early, so that it's
         # always the correct one. And as we do that, we can also install the
         # reactor here.
@@ -1046,7 +1055,8 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         from twisted.internet import reactor
 
         if stop_after_crawl:
-            loop = asyncio.get_event_loop()
+            # The loop of the installed asyncio reactor, which isn't running yet.
+            loop = _get_running_or_installed_loop()
             join_task = loop.create_task(self.join())
             join_task.add_done_callback(self._stop_reactor)
 

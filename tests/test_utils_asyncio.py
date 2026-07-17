@@ -11,6 +11,7 @@ from twisted.internet.defer import Deferred
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
+    _get_running_or_installed_loop,
     _parallel_asyncio,
     is_asyncio_available,
 )
@@ -25,6 +26,26 @@ class TestAsyncio:
     async def test_is_asyncio_available(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
         assert is_asyncio_available() == (reactor_pytest != "default")
+
+
+class TestGetAsyncioLoop:
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_running_loop(self) -> None:
+        assert _get_running_or_installed_loop() is asyncio.get_running_loop()
+
+    def test_no_running_loop(self, reactor_pytest: str) -> None:
+        with mock.patch("asyncio.get_running_loop", side_effect=RuntimeError):
+            if reactor_pytest == "asyncio":
+                from twisted.internet import reactor
+
+                assert _get_running_or_installed_loop() is reactor._asyncioEventloop
+            else:
+                # a non-asyncio reactor or no reactor at all
+                with pytest.raises(
+                    RuntimeError, match="no installed asyncio Twisted reactor"
+                ):
+                    _get_running_or_installed_loop()
 
 
 @pytest.mark.only_asyncio
