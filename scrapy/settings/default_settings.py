@@ -137,6 +137,8 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JUPYTER_KERNEL_CONNECTION_FILE",
+    "JUPYTER_KERNEL_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
     "LOG_DATEFORMAT",
@@ -358,6 +360,7 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
     "scrapy.extensions.logcount.LogCount": 0,
     "scrapy.extensions.telnet.TelnetConsole": 0,
+    "scrapy.extensions.jupyter_kernel.JupyterKernelConsole": 0,
     "scrapy.extensions.memusage.MemoryUsage": 0,
     "scrapy.extensions.memdebug.MemoryDebugger": 0,
     "scrapy.extensions.closespider.CloseSpider": 0,
@@ -452,6 +455,9 @@ ITEM_PIPELINES_BASE: dict[str, int] = {}
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
+
+JUPYTER_KERNEL_ENABLED = False
+JUPYTER_KERNEL_CONNECTION_FILE = None
 
 LOG_COLOR = True
 LOG_ENABLED = True
