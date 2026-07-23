@@ -118,7 +118,11 @@ class JupyterKernelConsole:
         self._app = app = _get_app_class().instance(**kwargs)
         app.initialize([])  # type: ignore[no-untyped-call]
         assert app.shell
-        app.kernel.user_ns = self._get_console_vars()
+        # Merge into the shell's own namespace instead of replacing
+        # kernel.user_ns: the latter leaves user_module pointing elsewhere, so
+        # cells would run with globals() != locals() and imports or top-level
+        # names would be invisible inside functions defined in later cells.
+        app.shell.user_ns.update(self._get_console_vars())
         app.shell.set_completer_frame()
         app.kernel.start()
         _kernel_running = True
