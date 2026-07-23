@@ -133,6 +133,26 @@ class JupyterKernelConsole:
         if app is None:
             return
         self._app = None
+        # Tell the connected clients that the kernel is going away, like a
+        # stock kernel does at shutdown. jupyter console shows the stream
+        # message only with include_other_output enabled and ignores
+        # shutdown_reply; qtconsole closes (or offers to) on shutdown_reply.
+        kernel = app.kernel
+        kernel.session.send(
+            kernel.iopub_socket,
+            "stream",
+            {
+                "name": "stderr",
+                "text": "Scrapy engine stopped; shutting down the kernel.\n",
+            },
+            ident=kernel._topic("stream"),
+        )
+        kernel.session.send(
+            kernel.iopub_socket,
+            "shutdown_reply",
+            {"status": "ok", "restart": False},
+            ident=kernel._topic("shutdown"),
+        )
         app.cleanup_connection_file()  # type: ignore[no-untyped-call]
         app.close()  # type: ignore[no-untyped-call]
         # Clear the singletons so that a later crawl can start a fresh kernel.
