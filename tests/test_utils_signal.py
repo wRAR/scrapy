@@ -4,10 +4,10 @@ import asyncio
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from pydispatch import dispatcher
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
+from scrapy._dispatcher import connect, disconnect
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.signal import (
@@ -31,8 +31,8 @@ class TestSendCatchLog:
         test_signal = object()
         handlers_called: set[Callable[..., None]] = set()
 
-        dispatcher.connect(self.error_handler, signal=test_signal)
-        dispatcher.connect(self.ok_handler, signal=test_signal)
+        connect(self.error_handler, signal=test_signal)
+        connect(self.ok_handler, signal=test_signal)
         caplog.clear()
         result = await ensure_awaitable(
             self._get_result(test_signal, arg="test", handlers_called=handlers_called)
@@ -50,8 +50,8 @@ class TestSendCatchLog:
         )
         assert result[1] == (self.ok_handler, "OK")
 
-        dispatcher.disconnect(self.error_handler, signal=test_signal)
-        dispatcher.disconnect(self.ok_handler, signal=test_signal)
+        disconnect(self.error_handler, signal=test_signal)
+        disconnect(self.ok_handler, signal=test_signal)
 
     @coroutine_test
     async def test_send_catch_log_dont_log(
@@ -60,7 +60,7 @@ class TestSendCatchLog:
         test_signal = object()
         handlers_called: set[Callable[..., None]] = set()
 
-        dispatcher.connect(self.error_handler, signal=test_signal)
+        connect(self.error_handler, signal=test_signal)
         caplog.clear()
         result = await ensure_awaitable(
             self._get_result(
@@ -77,7 +77,7 @@ class TestSendCatchLog:
             result[0][1], Exception if self.returns_exceptions else Failure
         )
 
-        dispatcher.disconnect(self.error_handler, signal=test_signal)
+        disconnect(self.error_handler, signal=test_signal)
 
     def _get_result(self, signal: Any, *a: Any, **kw: Any) -> Any:
         return send_catch_log(signal, *a, **kw)
@@ -166,8 +166,8 @@ class TestSendCatchLog2:
             return defer.Deferred()
 
         test_signal = object()
-        dispatcher.connect(test_handler, test_signal)
+        connect(test_handler, test_signal)
         send_catch_log(test_signal)
         assert len(caplog.records) == 1
         assert "Cannot return deferreds from signal handler" in caplog.text
-        dispatcher.disconnect(test_handler, test_signal)
+        disconnect(test_handler, test_signal)

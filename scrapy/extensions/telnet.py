@@ -17,6 +17,7 @@ from twisted.internet import protocol
 from twisted.internet.defer import fail, succeed
 
 from scrapy import signals
+from scrapy._dispatcher import Signal as _Signal
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 # signal to update telnet variables
 # args: telnet_vars
-update_telnet_vars = object()
+update_telnet_vars = _Signal("update_telnet_vars")
 
 
 def _get_manhole_class() -> type[Any]:

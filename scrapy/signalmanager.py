@@ -4,10 +4,9 @@ import inspect
 import warnings
 from typing import TYPE_CHECKING, Any
 
-from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
 
-from scrapy import signals
+from scrapy import _dispatcher, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -18,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class SignalManager:
-    def __init__(self, sender: object = dispatcher.Anonymous):
+    def __init__(self, sender: object = _dispatcher.Anonymous):
         self.sender: object = sender
 
     def connect(
@@ -27,9 +26,9 @@ class SignalManager:
         """
         Connect a receiver function to a signal.
 
-        The signal can be any object, although Scrapy comes with some
-        predefined signals that are documented in the :ref:`topics-signals`
-        section.
+        The signal can be any hashable object, although Scrapy comes with
+        some predefined signals that are documented in the
+        :ref:`topics-signals` section.
 
         :param receiver: the function to be connected
         :type receiver: collections.abc.Callable
@@ -39,7 +38,7 @@ class SignalManager:
         """
         _warn_unknown_args(receiver, signal)
         kwargs.setdefault("sender", self.sender)
-        dispatcher.connect(receiver, signal, **kwargs)
+        _dispatcher.connect(receiver, signal, **kwargs)
 
     def disconnect(
         self, receiver: Callable[..., Any], signal: object, **kwargs: Any
@@ -50,7 +49,7 @@ class SignalManager:
         are the same.
         """
         kwargs.setdefault("sender", self.sender)
-        dispatcher.disconnect(receiver, signal, **kwargs)
+        _dispatcher.disconnect(receiver, signal, **kwargs)
 
     def send_catch_log(
         self, signal: object, **kwargs: Any

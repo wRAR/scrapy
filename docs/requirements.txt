@@ -121,8 +121,6 @@ pydantic==2.14.1
     #   scrapy-spider-metadata
 pydantic-core==2.50.1
     # via pydantic
-pydispatcher==2.0.7
-    # via scrapy
 pygments==2.21.0
     # via sphinx
 pyopenssl==26.4.0

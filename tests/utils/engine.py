@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 import attr
 from itemadapter import ItemAdapter
-from pydispatch import dispatcher
 from twisted.internet import defer
 
 from scrapy import signals
@@ -111,11 +110,11 @@ class CrawlerRun:
             self.geturl("/numbers"),
         ]
 
+        self.crawler = get_crawler(self.spider_class)
         for name, signal in vars(signals).items():
             if not name.startswith("_"):
-                dispatcher.connect(self.record_signal, signal)
+                self.crawler.signals.connect(self.record_signal, signal)
 
-        self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.item_error, signals.item_error)
         self.crawler.signals.connect(self.headers_received, signals.headers_received)
@@ -131,7 +130,7 @@ class CrawlerRun:
         self.crawler.crawl(start_urls=start_urls)
 
         self.deferred: defer.Deferred[None] = defer.Deferred()
-        dispatcher.connect(self.stop, signals.engine_stopped)
+        self.crawler.signals.connect(self.stop, signals.engine_stopped)
         await maybe_deferred_to_future(self.deferred)
 
     async def stop(self):
