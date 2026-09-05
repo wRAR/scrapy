@@ -87,8 +87,12 @@ if TYPE_CHECKING:
 #   thread, and various engine init code also calls similar things,
 #   conceptually this shouldn't work (and doesn't in the reactorless mode, so
 #   there the initialization is moved to the event loop thread).
-# * The engine has several code paths specifically for the shell, and the shell
-#   uses several private members of the engine and of AsyncCrawlerProcess.
+# * The shell still uses some private members: the _start_request_processing
+#   keyword of ExecutionEngine.start_async(), Crawler._create_engine(),
+#   Crawler._create_spider() and AsyncCrawlerProcess._reactorless_loop.
+#   The engine lifecycle used here (starting the engine without a spider and
+#   opening a spider later, with close_if_idle=False) is itself a supported
+#   state machine path since https://github.com/scrapy/scrapy/issues/6916.
 
 
 class Shell:

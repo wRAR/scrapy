@@ -8,12 +8,11 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.downloader import Downloader
-from scrapy.core.engine import ExecutionEngine, _Slot
+from scrapy.core.engine import EngineState, ExecutionEngine, SpiderState, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import (
     CloseSpider,
@@ -23,7 +22,6 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -164,37 +162,41 @@ class TestEngine(TestEngineBase):
             await engine.stop_async()
 
     @coroutine_test
-    async def test_stop_async_reentrant_fast_waits_for_closewait(self) -> None:
+    async def test_stop_async_reentrant_fast_drops_downloads(self) -> None:
+        """A fast stop requested while a stop is already under way drops the
+        in-flight downloads, and returns without waiting for that stop."""
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        engine.spider = Mock()
-        engine._stopping = True
-        engine._closewait = defer.Deferred()
+        engine._engine_state = EngineState.STOPPING
+        engine._spider_state = SpiderState.CLOSING
 
-        with patch.object(
-            engine, "close_spider_async", new_callable=AsyncMock
-        ) as close:
-            stop_dfd = deferred_from_coro(engine.stop_async(mode="fast"))
-            await sleep(0)
-            close.assert_called_once_with(reason="shutdown", mode="fast")
-            assert not stop_dfd.called
+        with (
+            patch.object(engine, "close_spider_async", new_callable=AsyncMock) as close,
+            patch.object(
+                engine, "_fast_stop_downloader", new_callable=AsyncMock
+            ) as fast_stop,
+        ):
+            await engine.stop_async(mode="fast")
 
-            assert engine._closewait
-            engine._closewait.callback(None)
-            await maybe_deferred_to_future(stop_dfd)
+        close.assert_not_called()
+        fast_stop.assert_awaited_once()
+        assert engine._stop_mode == "fast"
 
     @coroutine_test
-    async def test_stop_async_reentrant_graceful_without_spider_or_closewait(
-        self,
-    ) -> None:
+    async def test_stop_async_reentrant_graceful_is_noop(self) -> None:
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        engine._stopping = True
+        engine._engine_state = EngineState.STOPPING
+        engine._spider_state = SpiderState.CLOSING
 
-        with patch.object(
-            engine, "close_spider_async", new_callable=AsyncMock
-        ) as close:
+        with (
+            patch.object(engine, "close_spider_async", new_callable=AsyncMock) as close,
+            patch.object(
+                engine, "_fast_stop_downloader", new_callable=AsyncMock
+            ) as fast_stop,
+        ):
             await engine.stop_async(mode="graceful")
 
         close.assert_not_called()
+        fast_stop.assert_not_called()
 
     @coroutine_test
     async def test_handle_downloader_output_ignores_fast_cancelled_failures(
