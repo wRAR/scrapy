@@ -155,6 +155,8 @@ class TestShellCommand:
         assert "Available Scrapy objects" in out
 
     def test_fetch_request_with_callbacks(self, mockserver: MockServer) -> None:
+        """The callback and errback of a request passed to fetch() are not
+        run: fetch() only downloads."""
         url = mockserver.url("/text")
         code = (
             f"fetch(scrapy.Request('{url}', callback=lambda r: print('CALLBACK'), "
@@ -175,6 +177,10 @@ class TestShellCommand:
         code = f"fetch('{url}') or response.request.headers.get('Referer')"
         _, out, _ = proc("shell", "-c", code)
         assert url in out
+
+    def test_engine_not_started(self) -> None:
+        _, out, _ = proc("shell", "-c", "crawler.engine.running")
+        assert out.strip() == "False"
 
 
 class TestShellCommandWithSpider(TestProjectBase):
