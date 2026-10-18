@@ -137,6 +137,7 @@ Built-in services
    topics/logging
    topics/stats
    topics/telnetconsole
+   topics/jupyter-kernel
 
 :doc:`topics/logging`
     Learn how to use Python's built-in logging in Scrapy.
@@ -146,6 +147,9 @@ Built-in services
 
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
+
+:doc:`topics/jupyter-kernel`
+    Inspect a running crawler using a Jupyter client.
 
 
 Solving specific problems

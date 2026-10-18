@@ -594,6 +594,9 @@ the following tools for this:
 
 - :ref:`Telnet console <topics-telnetconsole>`: connect to a crawl process with
   a telnet client and execute Python code inside it.
+- :ref:`Jupyter kernel <jupyter-kernel>`: connect to a crawl process with a
+  Jupyter client and execute Python code inside it, with tab completion and
+  top-level ``await``.
 - :ref:`Scrapy MCP server <using-mcp-server>`: point a coding agent to a crawl
   process so that it can execute Python code inside it.
 

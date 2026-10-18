@@ -480,6 +480,17 @@ The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
 setting, and the server will listen on the port specified in
 :setting:`TELNETCONSOLE_PORT`.
 
+.. _jupyter-kernel-extension:
+
+Jupyter kernel extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+.. module:: scrapy.extensions.jupyter_kernel
+
+.. autoclass:: JupyterKernelConsole
+
 Remote control extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
