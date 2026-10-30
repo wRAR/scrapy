@@ -5,7 +5,7 @@ import pprint
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, Self, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import ensure_awaitable
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
-_P = ParamSpec("_P")
 
 
 class MiddlewareManager(ABC):
@@ -134,9 +133,7 @@ class MiddlewareManager(ABC):
         always_add_spider: bool = False,
         warn_deferred: bool = False,
     ) -> _T:
-        methods = cast(
-            "Iterable[Callable[Concatenate[_T, _P], _T]]", self.methods[methodname]
-        )
+        methods = cast("Iterable[Callable[..., _T]]", self.methods[methodname])
         for method in methods:
             warn = global_object_name(method) if warn_deferred else None
             if always_add_spider or (

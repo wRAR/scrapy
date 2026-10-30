@@ -291,6 +291,38 @@ per-file-ignores = [
     "tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unidiomatic-typecheck,unnecessary-dunder-call,used-before-assignment",
 ]
 
+[tool.pyrefly]
+project-includes = ["scrapy", "tests"]
+# mypy treats the return type of a function without a return annotation as Any
+infer-return-types = "never"
+replace-imports-with-any = [
+    "twisted.internet.interfaces",
+    "twisted.internet.reactor",
+]
+# installed, but without type hints
+replace-untyped-imports-with-any = [
+    "psutil",
+    "zope.interface.*",
+]
+ignore-missing-imports = [
+    "aioboto3",
+    "aiobotocore.*",
+    "bpython",
+    "brotli",
+    "google.*",
+    "ipdb",
+    "pydispatch.*",
+    "pyftpdlib.*",
+    "pyperclip",
+    "pytest_twisted",
+    "robotexclusionrulesparser",
+    "siosocks.*",
+]
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/**"
+errors = { bad-override-mutable-attribute = false, bad-override-param-name = false, unbound-name = false }
+
 [tool.pytest.ini_options]
 addopts = [
     "--reactor=asyncio",

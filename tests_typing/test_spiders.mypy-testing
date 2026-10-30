@@ -35,13 +35,13 @@ class NarrowOverrideSpider(Spider):
 @pytest.mark.mypy_testing
 def test_spider_parse() -> None:
     spider = Spider()
-    reveal_type(spider.parse)  # R: def (scrapy.http.response.Response, *Any, **Any) -> Any
+    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.Response, *args: Any, **kwargs: Any) -> Any
 
 
 @pytest.mark.mypy_testing
 def test_spider_parse_override_simple() -> None:
     spider = SimpleSpider()
-    reveal_type(spider.parse)  # R: def (scrapy.http.response.Response, *Any, **Any) -> Any
+    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.Response, *args: Any, **kwargs: Any) -> Any
 
 
 @pytest.mark.mypy_testing
