@@ -37,7 +37,7 @@ from scrapy.utils.asyncio import (
     is_asyncio_available,
     sleep,
 )
-from scrapy.utils.python import global_object_name
+from scrapy.utils.python import _callable_name, global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -604,7 +604,7 @@ def _maybeDeferred_coro(
     if isinstance(result, Deferred):
         if warn:
             warnings.warn(
-                f"{global_object_name(f)} returned a Deferred, this is deprecated."
+                f"{_callable_name(f)} returned a Deferred, this is deprecated."
                 f" Please refactor this function to return a coroutine.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,
@@ -615,7 +615,7 @@ def _maybeDeferred_coro(
     if isinstance(result, failure.Failure):  # pragma: no cover
         if warn:
             warnings.warn(
-                f"{global_object_name(f)} returned a Failure, this is deprecated."
+                f"{_callable_name(f)} returned a Failure, this is deprecated."
                 f" Please refactor this function to return a coroutine.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,

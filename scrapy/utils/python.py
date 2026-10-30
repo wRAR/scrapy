@@ -310,6 +310,13 @@ def global_object_name(obj: Any) -> str:
     return f"{obj.__module__}.{obj.__qualname__}"
 
 
+def _callable_name(obj: Callable[..., Any]) -> str:
+    try:
+        return global_object_name(obj)
+    except AttributeError:
+        return repr(obj)
+
+
 def garbage_collect() -> None:  # pragma: no cover
     warnings.warn(
         "scrapy.utils.python.garbage_collect() is deprecated, use gc.collect() instead.",

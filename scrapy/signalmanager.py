@@ -1,26 +1,24 @@
 from __future__ import annotations
 
-import inspect
 import warnings
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
-from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
 
-from scrapy import signals
+from scrapy import _dispatcher, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import _active_crawler_scope
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.python import global_object_name
+from scrapy.utils.python import _callable_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
 class SignalManager:
-    def __init__(self, sender: object = dispatcher.Anonymous):
+    def __init__(self, sender: object = _dispatcher.Anonymous):
         self.sender: object = sender
 
     def connect(
@@ -29,9 +27,9 @@ class SignalManager:
         """
         Connect a receiver function to a signal.
 
-        The signal can be any object, although Scrapy comes with some
-        predefined signals that are documented in the :ref:`topics-signals`
-        section.
+        The signal can be any hashable object, although Scrapy comes with
+        some predefined signals that are documented in the
+        :ref:`topics-signals` section.
 
         :param receiver: the function to be connected
         :type receiver: collections.abc.Callable
@@ -39,9 +37,10 @@ class SignalManager:
         :param signal: the signal to connect to
         :type signal: object
         """
-        _warn_unknown_args(receiver, signal)
         kwargs.setdefault("sender", self.sender)
-        dispatcher.connect(receiver, signal, **kwargs)
+        accepted_args = _dispatcher._accepted_arguments(receiver)
+        _warn_unknown_args(receiver, signal, accepted_args)
+        _dispatcher.connect(receiver, signal, accepted_args, **kwargs)
 
     def disconnect(
         self, receiver: Callable[..., Any], signal: object, **kwargs: Any
@@ -52,7 +51,7 @@ class SignalManager:
         are the same.
         """
         kwargs.setdefault("sender", self.sender)
-        dispatcher.disconnect(receiver, signal, **kwargs)
+        _dispatcher.disconnect(receiver, signal, **kwargs)
 
     def send_catch_log(
         self, signal: object, **kwargs: Any
@@ -144,29 +143,16 @@ class SignalManager:
         await maybe_deferred_to_future(d)
 
 
-def _warn_unknown_args(receiver: Callable[..., Any], signal: object) -> None:
+def _warn_unknown_args(
+    receiver: Callable[..., Any], signal: object, accepted_args: frozenset[str] | None
+) -> None:
     sent = signals._signal_args.get(signal)
-    if sent is None:
+    if sent is None or accepted_args is None:
         return
-    try:
-        parameters = inspect.signature(receiver).parameters.values()
-    except (TypeError, ValueError):
-        return
-    if any(p.kind is p.VAR_KEYWORD for p in parameters):
-        return
-    unknown = {
-        p.name
-        for p in parameters
-        if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
-        and p.name not in sent
-        and p.name not in {"signal", "sender"}
-    }
+    unknown = accepted_args - sent - {"signal", "sender"}
     if not unknown:
         return
-    try:
-        receiver_name = global_object_name(receiver)
-    except AttributeError:
-        receiver_name = repr(receiver)
+    receiver_name = _callable_name(receiver)
     signal_name = next(k for k, v in vars(signals).items() if v is signal)
     warnings.warn(
         f"Signal handler {receiver_name} declares {', '.join(sorted(unknown))},"

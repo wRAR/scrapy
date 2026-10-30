@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import functools
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from pydispatch import dispatcher
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.signalmanager import SignalManager
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.signal import (
@@ -29,10 +32,11 @@ class TestSendCatchLog:
     @coroutine_test
     async def test_send_catch_log(self, caplog: pytest.LogCaptureFixture) -> None:
         test_signal = object()
+        signal_manager = SignalManager()
         handlers_called: set[Callable[..., None]] = set()
 
-        dispatcher.connect(self.error_handler, signal=test_signal)
-        dispatcher.connect(self.ok_handler, signal=test_signal)
+        signal_manager.connect(self.error_handler, signal=test_signal)
+        signal_manager.connect(self.ok_handler, signal=test_signal)
         caplog.clear()
         result = await ensure_awaitable(
             self._get_result(test_signal, arg="test", handlers_called=handlers_called)
@@ -50,17 +54,18 @@ class TestSendCatchLog:
         )
         assert result[1] == (self.ok_handler, "OK")
 
-        dispatcher.disconnect(self.error_handler, signal=test_signal)
-        dispatcher.disconnect(self.ok_handler, signal=test_signal)
+        signal_manager.disconnect(self.error_handler, signal=test_signal)
+        signal_manager.disconnect(self.ok_handler, signal=test_signal)
 
     @coroutine_test
     async def test_send_catch_log_dont_log(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         test_signal = object()
+        signal_manager = SignalManager()
         handlers_called: set[Callable[..., None]] = set()
 
-        dispatcher.connect(self.error_handler, signal=test_signal)
+        signal_manager.connect(self.error_handler, signal=test_signal)
         caplog.clear()
         result = await ensure_awaitable(
             self._get_result(
@@ -77,7 +82,7 @@ class TestSendCatchLog:
             result[0][1], Exception if self.returns_exceptions else Failure
         )
 
-        dispatcher.disconnect(self.error_handler, signal=test_signal)
+        signal_manager.disconnect(self.error_handler, signal=test_signal)
 
     def _get_result(self, signal: Any, *a: Any, **kw: Any) -> Any:
         return send_catch_log(signal, *a, **kw)
@@ -166,8 +171,114 @@ class TestSendCatchLog2:
             return defer.Deferred()
 
         test_signal = object()
-        dispatcher.connect(test_handler, test_signal)
+        signal_manager = SignalManager()
+        signal_manager.connect(test_handler, test_signal)
         send_catch_log(test_signal)
         assert len(caplog.records) == 1
         assert "Cannot return deferreds from signal handler" in caplog.text
-        dispatcher.disconnect(test_handler, test_signal)
+        signal_manager.disconnect(test_handler, test_signal)
+
+
+@pytest.mark.parametrize("method", ["send_catch_log_async", "send_catch_log_deferred"])
+@pytest.mark.parametrize("result_kind", ["value", "coroutine", "deferred"])
+@pytest.mark.parametrize(
+    ("receiver_kind", "name"),
+    [
+        ("function", "function"),
+        ("bound_method", "Handler.handle"),
+        ("partial", "functools.partial"),
+        ("callable_instance", "Handler object"),
+    ],
+)
+@coroutine_test
+async def test_receiver_kinds(
+    method: str,
+    result_kind: str,
+    receiver_kind: str,
+    name: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async def coroutine(value: int) -> int:
+        return value
+
+    def function(value: int) -> Any:
+        if result_kind == "coroutine":
+            return coroutine(value)
+        if result_kind == "deferred":
+            return defer.succeed(value)
+        return value
+
+    class Handler:
+        def handle(self, value: int) -> Any:
+            return function(value)
+
+        def __call__(self, value: int) -> Any:
+            return function(value)
+
+    owner = Handler()
+    receivers: dict[str, Callable[..., Any]] = {
+        "function": function,
+        "bound_method": owner.handle,
+        "partial": functools.partial(function, value=42),
+        "callable_instance": owner,
+    }
+    receiver = receivers[receiver_kind]
+
+    def second() -> str:
+        return "second"
+
+    signal = object()
+    signal_manager = SignalManager()
+    signal_manager.connect(receiver, signal)
+    signal_manager.connect(second, signal)
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", ScrapyDeprecationWarning)
+        results = await ensure_awaitable(
+            getattr(signal_manager, method)(signal, value=42, ignored=True)
+        )
+    assert results == [(receiver, 42), (second, "second")]
+    assert not caplog.records
+    return_warnings = [
+        str(record.message)
+        for record in records
+        if "returned a Deferred" in str(record.message)
+    ]
+    if result_kind == "deferred":
+        assert len(return_warnings) == 1
+        assert name in return_warnings[0]
+    else:
+        assert return_warnings == []
+
+
+@coroutine_test
+async def test_callable_receiver_failure(caplog: pytest.LogCaptureFixture) -> None:
+    error = ValueError("handler failed")
+
+    class Handler:
+        def __call__(self) -> Failure:
+            return Failure(error)
+
+    receiver = Handler()
+
+    def second() -> str:
+        return "second"
+
+    signal = object()
+    signal_manager = SignalManager()
+    signal_manager.connect(receiver, signal)
+    signal_manager.connect(second, signal)
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", ScrapyDeprecationWarning)
+        results = await ensure_awaitable(
+            signal_manager.send_catch_log_deferred(signal, dont_log=ValueError)
+        )
+    assert results[0][0] is receiver
+    assert isinstance(results[0][1], Failure)
+    assert results[0][1].value is error
+    assert results[1] == (second, "second")
+    assert any(
+        "Handler object" in str(record.message)
+        and "returned a Failure" in str(record.message)
+        for record in records
+    )
+    assert not caplog.records

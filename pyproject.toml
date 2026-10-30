@@ -7,7 +7,6 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    "PyDispatcher>=2.0.5",
     "Twisted>=23.8.0",
     "aiodns>=3.3.0",
     "aioftp>=0.26.1",
@@ -148,7 +147,6 @@ module = [
     "google.*",
     "ipdb",
     "psutil",
-    "pydispatch.*",
     "pyftpdlib.*",
     "pyperclip",
     "pytest_twisted",

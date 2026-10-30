@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import inspect
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from scrapy import signals
 from scrapy.signalmanager import SignalManager
+from scrapy.utils.asyncio import call_later
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -31,6 +34,17 @@ def test_disconnect_all() -> None:
 
 
 class TestUnknownArgumentWarning:
+    @pytest.mark.filterwarnings("error")
+    def test_warning_as_error_leaves_receiver_disconnected(self) -> None:
+        signal_manager = SignalManager(object())
+
+        def handler(cheese: Any = None) -> None:
+            pass
+
+        with pytest.raises(UserWarning, match="declares cheese"):
+            signal_manager.connect(handler, signals.spider_opened)
+        assert signal_manager.send_catch_log(signals.spider_opened) == []
+
     def test_warns(self) -> None:
         def handler(spider: Any, cheese: Any = None, *, ham: Any = None) -> None:
             pass
@@ -65,5 +79,36 @@ class TestUnknownArgumentWarning:
 
 
 def test_every_signal_declares_its_arguments() -> None:
-    defined = {v for v in vars(signals).values() if type(v) is object}
+    defined = {v for k, v in vars(signals).items() if not k.startswith("_")}
     assert defined == set(signals._signal_args)
+
+
+def test_signature_inspected_once() -> None:
+    class Handler:
+        def __init__(self) -> None:
+            self.lookups = 0
+
+        @property
+        def __signature__(self) -> inspect.Signature:
+            self.lookups += 1
+            return inspect.signature(self.__call__)
+
+        def __call__(self, spider: str) -> str:
+            return spider
+
+    handler = Handler()
+    signal_manager = SignalManager(object())
+    signal_manager.connect(handler, signals.spider_opened)
+    assert signal_manager.send_catch_log(signals.spider_opened, spider="foo") == [
+        (handler, "foo")
+    ]
+    assert handler.lookups == 1
+
+
+@coroutine_test
+async def test_wait_for() -> None:
+    signal = object()
+    signal_manager = SignalManager()
+    call_later(0, signal_manager.send_catch_log, signal)
+    await signal_manager.wait_for(signal)
+    assert signal_manager.send_catch_log(signal) == []
