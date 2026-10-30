@@ -542,6 +542,7 @@ class Scheduler(BaseScheduler):
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
+        assert self.mqclass
         return build_from_crawler(
             self.pqclass,
             self.crawler,
@@ -555,6 +556,7 @@ class Scheduler(BaseScheduler):
         assert self.crawler
         assert self.dqdir
         assert self.pqclass
+        assert self.dqclass
         state = self._read_dqs_state(self.dqdir)
         q = build_from_crawler(
             self.pqclass,

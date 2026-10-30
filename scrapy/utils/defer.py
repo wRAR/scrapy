@@ -693,7 +693,9 @@ def ensure_awaitable(o: Awaitable[_T], _warn: str | None = None) -> Awaitable[_T
 
 
 @overload
-def ensure_awaitable(o: _T, _warn: str | None = None) -> Awaitable[_T]: ...
+def ensure_awaitable(
+    o: Awaitable[_T] | _T, _warn: str | None = None
+) -> Awaitable[_T]: ...
 
 
 def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]:

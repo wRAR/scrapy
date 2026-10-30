@@ -45,34 +45,6 @@ _ProxyKey: TypeAlias = tuple[str, tuple[tuple[str, str], ...]]
 
 HAS_SOCKS = HAS_HTTP2 = False
 
-try:
-    import httpx2 as httpx
-except ImportError:  # pragma: no cover
-    httpx = None  # type: ignore[assignment]
-else:
-    # a small hack to avoid importing these optional extras unconditionally
-
-    DOWNLOAD_FAILED_EXCEPTIONS: tuple[type[BaseException], ...] = (
-        httpx.RequestError,
-        httpx.InvalidURL,
-    )
-
-    try:
-        import h2.exceptions
-
-        HAS_HTTP2 = True
-        DOWNLOAD_FAILED_EXCEPTIONS += (h2.exceptions.InvalidBodyLengthError,)
-    except ImportError:  # pragma: no cover
-        pass
-
-    try:
-        import socksio.exceptions
-
-        HAS_SOCKS = True
-        DOWNLOAD_FAILED_EXCEPTIONS += (socksio.exceptions.ProtocolError,)
-    except ImportError:  # pragma: no cover
-        pass
-
 
 def _is_headers_too_large_exception(exc: BaseException) -> bool:
     """Return whether *exc* was caused by response headers exceeding the limit
@@ -91,9 +63,41 @@ def _is_headers_too_large_exception(exc: BaseException) -> bool:
 
 
 if TYPE_CHECKING:
+    import h2.exceptions
+    import httpx2 as httpx
+
+    DOWNLOAD_FAILED_EXCEPTIONS: tuple[type[BaseException], ...]
     _Base = BaseStreamingDownloadHandler[httpx.Response]
 else:
     _Base = BaseStreamingDownloadHandler
+
+    try:
+        import httpx2 as httpx
+    except ImportError:  # pragma: no cover
+        httpx = None  # type: ignore[assignment]
+    else:
+        # a small hack to avoid importing these optional extras unconditionally
+
+        DOWNLOAD_FAILED_EXCEPTIONS = (
+            httpx.RequestError,
+            httpx.InvalidURL,
+        )
+
+        try:
+            import h2.exceptions
+
+            HAS_HTTP2 = True
+            DOWNLOAD_FAILED_EXCEPTIONS += (h2.exceptions.InvalidBodyLengthError,)
+        except ImportError:  # pragma: no cover
+            pass
+
+        try:
+            import socksio.exceptions
+
+            HAS_SOCKS = True
+            DOWNLOAD_FAILED_EXCEPTIONS += (socksio.exceptions.ProtocolError,)
+        except ImportError:  # pragma: no cover
+            pass
 
 
 class HttpxDownloadHandler(_Base):

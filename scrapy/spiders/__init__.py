@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
 
     from scrapy.crawler import Crawler
-    from scrapy.http.request import CallbackT
     from scrapy.settings import BaseSettings
     from scrapy.utils.log import SpiderLoggerAdapter
 
@@ -249,7 +248,9 @@ class Spider(object_ref):
         return self.parse(response, **kwargs)
 
     if TYPE_CHECKING:
-        parse: CallbackT
+
+        def parse(self, response: Response, *args: Any, **kwargs: Any) -> Any: ...
+
     else:
 
         def parse(self, response: Response, **kwargs: Any) -> Any:
